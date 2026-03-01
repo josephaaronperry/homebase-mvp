@@ -1,0 +1,17 @@
+{
+  "name": "realestate-platform",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "db:generate": "cd packages/database && npx prisma generate",
+    "db:push": "cd packages/database && npx prisma db push",
+    "db:seed": "cd packages/database && npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' seed.ts"
+  },
+  "devDependencies": {
+    "turbo": "^1.13.3",
+    "typescript": "^5.4.5",
+    "@types/node": "^20.12.7"
+  }
+}
