@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { ScheduleTourModal } from '@/components/ScheduleTourModal';
+import { SignInRequiredModal } from '@/components/SignInRequiredModal';
 
 type Props = {
   propertyId: string | number;
@@ -22,19 +23,23 @@ export function PropertySidebar({
   state,
 }: Props) {
   const router = useRouter();
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const [tourModalOpen, setTourModalOpen] = useState(false);
+  const [signInModalOpen, setSignInModalOpen] = useState(false);
+  const [signInModalAction, setSignInModalAction] = useState<'schedule a tour' | 'make an offer'>('schedule a tour');
   const [agentForm, setAgentForm] = useState({ name: '', email: '', phone: '' });
   const [agentSubmitting, setAgentSubmitting] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
     const check = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { user: u } } = await supabase.auth.getUser();
+      setUser(u ?? null);
+      if (!u) return;
       const { data } = await supabase
         .from('kyc_submissions')
         .select('status')
-        .eq('user_id', user.id)
+        .eq('user_id', u.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -43,17 +48,31 @@ export function PropertySidebar({
     check();
   }, []);
 
-  const fmtPrice = price
-    ? `$${price.toLocaleString()}`
-    : 'Price on request';
+  const handleScheduleTourClick = () => {
+    if (!user) {
+      setSignInModalAction('schedule a tour');
+      setSignInModalOpen(true);
+      return;
+    }
+    setTourModalOpen(true);
+  };
 
-  const handleMakeOffer = () => {
+  const handleMakeOfferClick = () => {
+    if (!user) {
+      setSignInModalAction('make an offer');
+      setSignInModalOpen(true);
+      return;
+    }
     if (!isVerified) {
       router.push('/verify?message=You need to verify your identity before making an offer');
       return;
     }
-    router.push(`/offers/new?property=${propertyId}`);
+    router.push(`/offers/new?propertyId=${propertyId}`);
   };
+
+  const fmtPrice = price
+    ? `$${price.toLocaleString()}`
+    : 'Price on request';
 
   const handleAgentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,14 +102,14 @@ export function PropertySidebar({
           <div className="space-y-2">
             <button
               type="button"
-              onClick={() => setTourModalOpen(true)}
+              onClick={handleScheduleTourClick}
               className="w-full rounded-xl bg-emerald-500 px-3 py-2.5 text-xs font-semibold text-slate-950 shadow-md shadow-emerald-500/40 hover:bg-emerald-400"
             >
               Schedule a Tour
             </button>
             <button
               type="button"
-              onClick={handleMakeOffer}
+              onClick={handleMakeOfferClick}
               className={`w-full rounded-xl px-3 py-2.5 text-xs font-semibold ${
                 isVerified
                   ? 'border border-emerald-500/60 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
@@ -162,13 +181,19 @@ export function PropertySidebar({
         <MortgageCalculator price={price ?? 0} />
       </aside>
 
-      {tourModalOpen && (
+      {tourModalOpen && user && (
         <ScheduleTourModal
           propertyId={propertyId}
           propertyAddress={address}
           propertyCity={city}
           propertyState={state}
           onClose={() => setTourModalOpen(false)}
+        />
+      )}
+      {signInModalOpen && (
+        <SignInRequiredModal
+          action={signInModalAction}
+          onClose={() => setSignInModalOpen(false)}
         />
       )}
     </>

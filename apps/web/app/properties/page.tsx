@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { PropertyCard } from '@/components/PropertyCard';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { useToast } from '@/components/ToastProvider';
 
 type Property = {
   id: string | number;
@@ -33,8 +34,11 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+const GUEST_SAVED_KEY = 'homebase_saved';
+
 export default function PropertiesPage() {
   const searchParams = useSearchParams();
+  const toast = useToast();
   const initialQ = searchParams.get('q') ?? '';
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,9 +64,21 @@ export default function PropertiesPage() {
   useEffect(() => {
     const loadSaved = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const guestSaved: (string | number)[] = [];
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem(GUEST_SAVED_KEY);
+          if (raw) guestSaved.push(...JSON.parse(raw));
+        } catch {}
+      }
+      if (!user) {
+        setSavedIds(new Set(guestSaved));
+        return;
+      }
       const { data } = await supabase.from('saved_properties').select('property_id');
-      setSavedIds(new Set((data ?? []).map((r: { property_id: string | number }) => r.property_id)));
+      const serverIds = new Set((data ?? []).map((r: { property_id: string | number }) => r.property_id));
+      guestSaved.forEach((id) => serverIds.add(id));
+      setSavedIds(serverIds);
     };
     loadSaved();
   }, []);
@@ -170,10 +186,6 @@ export default function PropertiesPage() {
   const handleSaveClick = async (e: React.MouseEvent, propertyId: string | number) => {
     e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      window.location.href = '/login?redirect=/properties';
-      return;
-    }
     const isSaved = savedIds.has(propertyId);
     setSavedIds((prev) => {
       const next = new Set(prev);
@@ -181,10 +193,22 @@ export default function PropertiesPage() {
       else next.add(propertyId);
       return next;
     });
+    if (!user) {
+      try {
+        const next = new Set(savedIds);
+        if (isSaved) next.delete(propertyId);
+        else next.add(propertyId);
+        localStorage.setItem(GUEST_SAVED_KEY, JSON.stringify([...next]));
+      } catch {}
+      toast(isSaved ? 'Removed from saved homes' : 'Saved to favorites');
+      return;
+    }
     if (isSaved) {
       await supabase.from('saved_properties').delete().eq('property_id', propertyId).eq('user_id', user.id);
+      toast('Removed from saved homes');
     } else {
       await supabase.from('saved_properties').insert({ property_id: propertyId, user_id: user.id });
+      toast('Saved to favorites');
     }
   };
 
@@ -193,31 +217,13 @@ export default function PropertiesPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
-      <header className="border-b border-slate-900 bg-slate-950/95">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2 text-sm font-semibold">
-            <span className="text-lg">🏠</span>
-            <span>HomeBase</span>
-          </Link>
-          <nav className="flex items-center gap-3 text-xs font-medium text-slate-300">
-            <Link href="/saved" className="hover:text-slate-50">
-              Saved
-            </Link>
-            <Link href="/dashboard" className="hover:text-slate-50">
-              Dashboard
-            </Link>
-          </nav>
-        </div>
-      </header>
-
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-4 sm:px-6 lg:px-8">
         <div className="mb-4">
           <h1 className="text-xl font-semibold text-slate-50 sm:text-2xl">
             Homes on the market
           </h1>
           <p className="mt-1 text-xs text-slate-400 sm:text-sm">
-            Zillow-style split view with powerful filters on the left and rich
-            cards on the right.
+            Explore homes across top U.S. markets.
           </p>
           <div className="mt-3">
             <input

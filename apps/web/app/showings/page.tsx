@@ -75,8 +75,7 @@ export default function ShowingsPage() {
             Scheduled tours
           </p>
           <p className="mt-1 text-sm text-slate-300">
-            Keep track of upcoming and past home tours in one, Zillow-style
-            view.
+            Upcoming and past home tours in one place.
           </p>
         </div>
 

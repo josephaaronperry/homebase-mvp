@@ -3,11 +3,11 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Browse homes',
   description:
-    'Homes on the market. Filter by price, beds, baths, and property type. Zillow-style search experience.',
+    'Explore homes across top U.S. markets. Filter by price, beds, baths, and property type.',
   openGraph: {
-    title: 'Browse homes | HomeBase',
+    title: 'Browse homes',
     description:
-      'Homes on the market. Filter by price, beds, baths, and property type.',
+      'Explore homes across top U.S. markets.',
   },
 };
 

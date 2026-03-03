@@ -30,7 +30,7 @@ const CONTINGENCY_TOOLTIPS: Record<string, string> = {
 export default function NewOfferPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const propertyId = searchParams.get('property');
+  const propertyId = searchParams.get('propertyId') ?? searchParams.get('property');
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -40,6 +40,8 @@ export default function NewOfferPage() {
     status: string;
   } | null>(null);
   const [property, setProperty] = useState<Property | null>(null);
+  const [preApprovalChecked, setPreApprovalChecked] = useState(false);
+  const [showNotYetMessage, setShowNotYetMessage] = useState(false);
 
   const [form, setForm] = useState({
     offer_price: 0,
@@ -144,6 +146,59 @@ export default function NewOfferPage() {
     );
   }
 
+  if (!preApprovalChecked && propertyId) {
+    return (
+      <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
+        <main className="mx-auto w-full max-w-md flex-1 px-4 py-12">
+          <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-6">
+            <h2 className="text-lg font-semibold text-slate-50">Pre-approval check</h2>
+            <p className="mt-2 text-sm text-slate-400">
+              Are you pre-approved for a mortgage or paying cash? Sellers prefer buyers who are ready to close.
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => setPreApprovalChecked(true)}
+                className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
+              >
+                Paying cash
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreApprovalChecked(true)}
+                className="w-full rounded-xl border border-emerald-500/50 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20"
+              >
+                Pre-approved (continue)
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowNotYetMessage(true)}
+                className="w-full rounded-xl border border-slate-700 px-4 py-3 text-sm font-medium text-slate-300 hover:border-slate-600"
+              >
+                Not yet
+              </button>
+            </div>
+            {showNotYetMessage && (
+            <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+              <p className="font-medium">Get pre-approved first</p>
+              <p className="mt-1 text-amber-200/90">
+                We recommend: Better.com, Rocket Mortgage, or your local credit union. Once you have a pre-approval letter, return here to make your offer.
+              </p>
+              <button
+                type="button"
+                onClick={() => setPreApprovalChecked(true)}
+                className="mt-3 text-xs font-semibold text-amber-300 underline"
+              >
+                I have pre-approval, continue
+              </button>
+            </div>
+            )}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (submittedOffer) {
     return (
       <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
@@ -199,9 +254,22 @@ export default function NewOfferPage() {
 
         <h1 className="text-xl font-semibold text-slate-50">Make an offer</h1>
         {property && (
-          <p className="mt-1 text-sm text-slate-400">
-            {property.address}, {property.city}, {property.state}
-          </p>
+          <div className="mt-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+            <div className="text-xs font-medium uppercase tracking-wider text-slate-500">Property</div>
+            <div className="mt-1 font-medium text-slate-50">{property.address}</div>
+            <div className="text-sm text-slate-400">{property.city}, {property.state}</div>
+            {property.price != null && (
+              <div className="mt-2 text-sm font-semibold text-emerald-400">
+                List price: ${property.price.toLocaleString()}
+              </div>
+            )}
+            <Link
+              href={`/properties/${property.id}`}
+              className="mt-2 inline-block text-xs font-semibold text-emerald-400 hover:text-emerald-300"
+            >
+              View property →
+            </Link>
+          </div>
         )}
 
         <div className="mt-6 flex gap-2">

@@ -61,6 +61,7 @@ export default function DashboardPage() {
   const [viewed, setViewed] = useState<ViewedProperty[]>([]);
   const [acceptedOffer, setAcceptedOffer] = useState<OfferPreview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [kycStatus, setKycStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -134,7 +135,9 @@ export default function DashboardPage() {
       setOffers(offersData);
       const accepted = offersData.find((o) => o.status === 'ACCEPTED') ?? null;
       setAcceptedOffer(accepted);
-      setIsVerified((kycRes.data as { status?: string } | null)?.status === 'APPROVED');
+      const kyc = (kycRes.data as { status?: string } | null)?.status ?? null;
+      setKycStatus(kyc);
+      setIsVerified(kyc === 'APPROVED');
 
       const viewedIds = (viewedRes.data ?? [])
         .map((v: { property_id: string }) => v.property_id)
@@ -210,8 +213,21 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Verification banner for unverified users */}
-        {!isVerified && (
+        {/* Verification status banner */}
+        {isVerified && (
+          <div className="mb-6 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-4">
+            <p className="text-sm font-medium text-emerald-100">
+              Identity verified — you can make offers.
+            </p>
+          </div>
+        )}
+        {kycStatus === 'PENDING' || kycStatus === 'UNDER_REVIEW' ? (
+          <div className="mb-6 rounded-2xl border border-sky-500/40 bg-sky-500/10 px-5 py-4">
+            <p className="text-sm font-medium text-sky-100">
+              Your verification is under review — usually within 24 hours.
+            </p>
+          </div>
+        ) : !isVerified && (
           <div className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-5 py-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm font-medium text-amber-100">
@@ -222,6 +238,51 @@ export default function DashboardPage() {
                 className="flex-shrink-0 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-amber-400"
               >
                 Verify now
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state: getting started */}
+        {!loading && stats.saved === 0 && showings.length === 0 && offers.length === 0 && !acceptedOffer && (
+          <div className="mb-8 rounded-3xl border border-slate-800 bg-slate-900/50 p-8">
+            <h2 className="text-lg font-semibold text-slate-50">Getting started</h2>
+            <p className="mt-1 text-sm text-slate-400">Follow these steps to find and secure your next home.</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 hover:border-emerald-500/50">
+                <span className="text-2xl">1</span>
+                <div>
+                  <div className="font-medium text-slate-50">Browse homes</div>
+                  <div className="text-xs text-slate-400">Explore listings in your market.</div>
+                </div>
+              </Link>
+              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 hover:border-emerald-500/50">
+                <span className="text-2xl">2</span>
+                <div>
+                  <div className="font-medium text-slate-50">Save favorites</div>
+                  <div className="text-xs text-slate-400">Heart homes to revisit later.</div>
+                </div>
+              </Link>
+              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 hover:border-emerald-500/50">
+                <span className="text-2xl">3</span>
+                <div>
+                  <div className="font-medium text-slate-50">Schedule a tour</div>
+                  <div className="text-xs text-slate-400">Book in-person or virtual showings.</div>
+                </div>
+              </Link>
+              <Link href="/verify" className="flex items-start gap-3 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 hover:border-emerald-500/50">
+                <span className="text-2xl">4</span>
+                <div>
+                  <div className="font-medium text-slate-50">Get verified</div>
+                  <div className="text-xs text-slate-400">Complete identity verification.</div>
+                </div>
+              </Link>
+              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 hover:border-emerald-500/50">
+                <span className="text-2xl">5</span>
+                <div>
+                  <div className="font-medium text-slate-50">Make an offer</div>
+                  <div className="text-xs text-slate-400">Submit offers from any property.</div>
+                </div>
               </Link>
             </div>
           </div>

@@ -61,41 +61,7 @@ export default async function HomePage() {
         <div className="pointer-events-none absolute inset-0 bg-[url('https://images.unsplash.com/photo-1512914890250-353c97c9e7e2?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-slate-950" />
 
-        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-4 pt-6 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15">
-              <span className="text-lg">🏠</span>
-            </div>
-            <div className="leading-tight">
-              <div className="text-sm font-semibold text-slate-50">HomeBase</div>
-              <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-                Real estate platform
-              </div>
-            </div>
-          </Link>
-          <nav className="flex items-center gap-3 text-sm">
-            <Link
-              href="/properties"
-              className="hidden rounded-full px-3 py-1.5 text-slate-200 hover:bg-white/5 sm:inline-flex"
-            >
-              Browse homes
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-full px-3 py-1.5 text-slate-200 hover:bg-white/5"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-semibold text-slate-950 shadow-md shadow-emerald-500/40 hover:bg-emerald-400"
-            >
-              Get started
-            </Link>
-          </nav>
-        </header>
-
-        <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-12 pt-10 sm:px-6 lg:px-8">
+        <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-12 pt-6 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-300">
               Find your dream home
@@ -171,7 +137,7 @@ export default async function HomePage() {
                   Featured homes
                 </h2>
                 <p className="mt-1 text-xs text-slate-400">
-                  Pulled live from your Supabase properties.
+                  Live listings across top markets.
                 </p>
               </div>
               <Link
@@ -208,20 +174,6 @@ export default async function HomePage() {
           </section>
         </main>
       </section>
-
-      <footer className="border-t border-slate-900 bg-black/80">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-3 px-4 py-4 text-xs text-slate-500 sm:flex-row sm:px-6 lg:px-8">
-          <p>© {new Date().getFullYear()} HomeBase. All rights reserved.</p>
-          <div className="flex gap-4">
-            <Link href="/properties" className="hover:text-slate-300">
-              Browse
-            </Link>
-            <Link href="/dashboard" className="hover:text-slate-300">
-              Dashboard
-            </Link>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

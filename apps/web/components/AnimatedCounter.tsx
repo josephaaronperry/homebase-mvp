@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 
 export function AnimatedCounter({
   value,
@@ -33,11 +32,8 @@ export function AnimatedCounter({
   }, [mounted, value, duration]);
 
   return (
-    <motion.span
-      className={className}
-      initial={false}
-    >
-      {mounted ? display.toLocaleString() : '0'}
-    </motion.span>
+    <span className={className}>
+      {mounted ? display.toLocaleString() : value.toLocaleString()}
+    </span>
   );
 }

@@ -79,7 +79,7 @@ export default function SellListPage() {
       alert(error.message ?? 'Failed to create listing');
       return;
     }
-    router.push('/sell/dashboard');
+    router.push('/sell/success');
   };
 
   return (

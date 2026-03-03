@@ -152,6 +152,11 @@ export default function RegisterPage() {
             Sign in
           </Link>
         </p>
+        <p className="mt-4 text-center text-xs text-slate-500">
+          <Link href="/how-it-works" className="text-slate-400 hover:text-emerald-400">
+            Learn how HomeBase works
+          </Link>
+        </p>
       </div>
     </div>
   );

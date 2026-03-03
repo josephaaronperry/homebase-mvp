@@ -45,8 +45,6 @@ function getNext30Weekdays(): Date[] {
   return out;
 }
 
-type Step = 'form' | 'success';
-
 export function ScheduleTourModal({
   propertyId,
   propertyAddress,
@@ -55,17 +53,11 @@ export function ScheduleTourModal({
   onClose,
 }: Props) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>('form');
   const [date, setDate] = useState<Date | null>(null);
   const [time, setTime] = useState<string>('');
   const [tourType, setTourType] = useState<'IN_PERSON' | 'VIRTUAL'>('IN_PERSON');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [insertedShowing, setInsertedShowing] = useState<{
-    id: string;
-    scheduled_at: string;
-    tour_type: string;
-  } | null>(null);
 
   const dates = useMemo(() => getNext30Weekdays(), []);
 
@@ -108,8 +100,9 @@ export function ScheduleTourModal({
         alert(error.message ?? 'Failed to schedule tour');
         return;
       }
-      setInsertedShowing(data as { id: string; scheduled_at: string; tour_type: string });
-      setStep('success');
+      const inserted = data as { id: string; scheduled_at: string; tour_type: string };
+      onClose();
+      router.push(`/showings/${inserted.id}/confirmed`);
     },
     [
       date,
@@ -121,59 +114,9 @@ export function ScheduleTourModal({
       propertyCity,
       propertyState,
       router,
+      onClose,
     ]
   );
-
-  const handleViewShowings = () => {
-    onClose();
-    router.push('/showings');
-  };
-
-  if (step === 'success' && insertedShowing) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-        <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
-          <div className="mb-4 flex items-center justify-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20 text-2xl text-emerald-400">
-              ✓
-            </div>
-          </div>
-          <h2 className="text-center text-lg font-semibold text-slate-50">
-            Tour scheduled
-          </h2>
-          <p className="mt-2 text-center text-sm text-slate-300">
-            Your showing request has been submitted. We&apos;ll confirm shortly.
-          </p>
-          <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-xs text-slate-200">
-            <div className="font-medium text-slate-50">{propertyAddress}</div>
-            <div className="mt-1 text-slate-400">
-              {propertyCity}, {propertyState}
-            </div>
-            <div className="mt-2">
-              {new Date(insertedShowing.scheduled_at).toLocaleString()}
-            </div>
-            <div className="mt-1 capitalize text-slate-500">
-              {insertedShowing.tour_type?.toLowerCase().replace('_', ' ')}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleViewShowings}
-            className="mt-4 w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
-          >
-            View my showings
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="mt-2 w-full rounded-xl border border-slate-700 px-4 py-2 text-xs text-slate-300 hover:border-slate-600"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
@@ -192,27 +135,38 @@ export function ScheduleTourModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
+            <label className="mb-2 block text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
               Date (next 30 weekdays)
             </label>
-            <select
-              required
-              value={date?.toISOString().slice(0, 10) ?? ''}
-              onChange={(e) => setDate(new Date(e.target.value))}
-              className="h-9 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 text-xs text-slate-50 outline-none ring-emerald-500/60 focus:border-emerald-400"
-            >
-              <option value="">Select date</option>
-              {dates.map((d) => (
-                <option key={d.toISOString()} value={d.toISOString().slice(0, 10)}>
-                  {d.toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </option>
-              ))}
-            </select>
+            <div className="grid grid-cols-5 gap-1.5">
+              {dates.map((d) => {
+                const key = d.toISOString().slice(0, 10);
+                const isWeekendDay = isWeekend(d);
+                const selected = date?.toISOString().slice(0, 10) === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    disabled={isWeekendDay}
+                    onClick={() => !isWeekendDay && setDate(new Date(d))}
+                    className={`rounded-lg py-2 text-[11px] font-medium ${
+                      isWeekendDay
+                        ? 'cursor-not-allowed bg-slate-900/50 text-slate-600'
+                        : selected
+                          ? 'bg-emerald-500 text-slate-950'
+                          : 'bg-slate-800/80 text-slate-200 hover:bg-slate-700'
+                    }`}
+                  >
+                    {d.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+            {date && (
+              <p className="mt-1.5 text-[11px] text-slate-500">
+                {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            )}
           </div>
 
           <div>

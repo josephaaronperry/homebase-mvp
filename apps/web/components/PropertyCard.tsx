@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 type Props = {
@@ -35,6 +36,11 @@ export function PropertyCard({
   saved,
   onSaveClick,
 }: Props) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const displayPrice = price
     ? `$${Number(price).toLocaleString()}`
     : 'Price on request';
@@ -47,12 +53,8 @@ export function PropertyCard({
     imageUrl ??
     'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=900&q=80&sat=-10';
 
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -4 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className="h-full"
-    >
+  const cardContent = (
+    <>
       <Link
         href={href}
         className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-900 bg-slate-950/80 shadow-md shadow-black/40 transition hover:border-emerald-400/70 hover:shadow-xl hover:shadow-emerald-500/10"
@@ -101,6 +103,20 @@ export function PropertyCard({
         </div>
       </div>
       </Link>
+    </>
+  );
+
+  if (!mounted) {
+    return <div className="h-full">{cardContent}</div>;
+  }
+
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02, y: -4 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      className="h-full"
+    >
+      {cardContent}
     </motion.div>
   );
 }

@@ -4,12 +4,14 @@ import { useMemo, useState } from 'react';
 
 type Props = {
   price: number;
+  defaultOpen?: boolean;
 };
 
-export function MortgageCalculator({ price }: Props) {
+export function MortgageCalculator({ price, defaultOpen = false }: Props) {
+  const [open, setOpen] = useState(defaultOpen);
   const [homePrice, setHomePrice] = useState(price || 750_000);
   const [downPayment, setDownPayment] = useState(20);
-  const [rate, setRate] = useState(5.5);
+  const [rate, setRate] = useState(7);
   const [years, setYears] = useState(30);
 
   const monthly = useMemo(() => {
@@ -22,20 +24,27 @@ export function MortgageCalculator({ price }: Props) {
   }, [downPayment, homePrice, rate, years]);
 
   return (
-    <div className="rounded-2xl border border-slate-900 bg-slate-950/90 p-4 text-xs text-slate-200">
-      <div className="mb-2">
-        <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
-          Mortgage estimate
+    <div className="rounded-2xl border border-slate-900 bg-slate-950/90 overflow-hidden text-xs text-slate-200">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between p-4 text-left hover:bg-slate-900/50"
+      >
+        <div>
+          <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
+            Mortgage estimate
+          </div>
+          <div className="mt-1 text-xl font-semibold text-slate-50">
+            {monthly ? `$${monthly.toLocaleString()}/mo` : '—'}
+          </div>
         </div>
-        <div className="mt-1 text-xl font-semibold text-slate-50">
-          {monthly ? `$${monthly.toLocaleString()}/mo` : '—'}
-        </div>
-        <div className="mt-1 text-[11px] text-slate-500">
+        <span className="text-slate-500">{open ? '▼' : '▶'}</span>
+      </button>
+      {open && (
+        <div className="border-t border-slate-800 px-4 pb-4 pt-2 space-y-3">
+        <div className="text-[11px] text-slate-500">
           Principal &amp; interest only. Taxes and insurance not included.
         </div>
-      </div>
-
-      <div className="space-y-3">
         <div>
           <label className="mb-1 block text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
             Home price
@@ -85,7 +94,8 @@ export function MortgageCalculator({ price }: Props) {
             <option value={30}>30 years</option>
           </select>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

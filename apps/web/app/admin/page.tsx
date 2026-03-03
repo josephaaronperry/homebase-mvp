@@ -189,13 +189,22 @@ export default function AdminPage() {
             {showings.length === 0 ? (
               <p className="text-sm text-slate-500">No showings.</p>
             ) : (
-              showings.map((r) => (
+              showings.map((r) => {
+                const verified = kyc.some((k) => k.user_id === r.user_id && k.status === 'APPROVED');
+                return (
                 <div
                   key={r.id}
                   className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3"
                 >
                   <div>
-                    <div className="text-sm font-medium text-slate-100">{r.property_address ?? r.id}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-100">{r.property_address ?? r.id}</span>
+                      {verified && (
+                        <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                          Verified
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-slate-500">
                       {r.status} • {r.scheduled_at ? new Date(r.scheduled_at).toLocaleString() : '—'}
                     </div>
@@ -219,7 +228,8 @@ export default function AdminPage() {
                     </div>
                   )}
                 </div>
-              ))
+              );
+              })
             )}
           </div>
         )}
