@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase/client';
+
+const supabase = getSupabaseClient();
 
 export function Navbar() {
   const router = useRouter();

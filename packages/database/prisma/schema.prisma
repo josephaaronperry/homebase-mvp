@@ -25,6 +25,10 @@ model User {
   notifications        Notification[]
   identityVerification IdentityVerification?
   sessions             Session[]
+  preApprovals         PreApproval[]
+  buyingPipelines      BuyingPipeline[]
+  lenderSelections     LenderSelection[]
+  inspections          Inspection[]
 
   @@map("users")
 }
@@ -96,9 +100,10 @@ model Property {
   listedAt     DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
-  savedBy      SavedProperty[]
-  showings     Showing[]
-  offers       Offer[]
+  savedBy          SavedProperty[]
+  showings         Showing[]
+  offers           Offer[]
+  buyingPipelines  BuyingPipeline[]
 
   @@index([city, state])
   @@index([status])
@@ -175,8 +180,9 @@ model Offer {
   updatedAt      DateTime        @updatedAt
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   property       Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  documents      OfferDocument[]
-  timeline       TransactionEvent[]
+  documents       OfferDocument[]
+  timeline        TransactionEvent[]
+  buyingPipelines BuyingPipeline[]
 
   @@map("offers")
 }
@@ -247,4 +253,78 @@ model Notification {
 
   @@index([userId, read])
   @@map("notifications")
+}
+
+model PreApproval {
+  id                String   @id @default(uuid())
+  userId            String
+  employmentType    String
+  annualIncome      Decimal  @db.Decimal(14, 2)
+  monthlyDebts      Decimal  @db.Decimal(12, 2) @default(0)
+  creditScoreRange  String
+  downPaymentAmount Decimal  @db.Decimal(14, 2)
+  purchaseTimeline  String
+  estimatedMin      Decimal? @db.Decimal(14, 2)
+  estimatedMax      Decimal? @db.Decimal(14, 2)
+  createdAt         DateTime @default(now())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("pre_approvals")
+}
+
+model BuyingPipeline {
+  id               String    @id @default(uuid())
+  userId           String
+  propertyId       String
+  offerId          String?
+  currentStage     String    @default("pre_approval")
+  stageCompletedAt Json      @default("{}")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property         Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  offer            Offer?    @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  lenderSelections LenderSelection[]
+  inspections      Inspection[]
+
+  @@unique([userId, propertyId])
+  @@index([userId])
+  @@index([propertyId])
+  @@map("buying_pipelines")
+}
+
+model LenderSelection {
+  id                      String        @id @default(uuid())
+  userId                  String
+  buyingPipelineId        String
+  lenderName              String
+  lenderLoanType          String?
+  interestRate            Decimal?      @db.Decimal(5, 2)
+  estimatedMonthlyPayment Decimal?     @db.Decimal(12, 2)
+  selectedAt              DateTime      @default(now())
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  buyingPipeline          BuyingPipeline @relation(fields: [buyingPipelineId], references: [id], onDelete: Cascade)
+
+  @@unique([buyingPipelineId])
+  @@index([userId])
+  @@map("lender_selections")
+}
+
+model Inspection {
+  id               String         @id @default(uuid())
+  userId           String
+  buyingPipelineId String
+  inspectorName    String
+  inspectorRating  Decimal?       @db.Decimal(3, 1)
+  price            Decimal?       @db.Decimal(10, 2)
+  scheduledDate    DateTime       @db.Date
+  timeSlot         String
+  createdAt        DateTime       @default(now())
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  buyingPipeline   BuyingPipeline @relation(fields: [buyingPipelineId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([buyingPipelineId])
+  @@map("inspections")
 }

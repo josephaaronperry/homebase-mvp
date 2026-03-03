@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase/client';
+
+const supabase = getSupabaseClient();
 import { PropertyCard } from '@/components/PropertyCard';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { useToast } from '@/components/ToastProvider';
@@ -198,7 +200,7 @@ export default function PropertiesPage() {
         const next = new Set(savedIds);
         if (isSaved) next.delete(propertyId);
         else next.add(propertyId);
-        localStorage.setItem(GUEST_SAVED_KEY, JSON.stringify([...next]));
+        localStorage.setItem(GUEST_SAVED_KEY, JSON.stringify(Array.from(next)));
       } catch {}
       toast(isSaved ? 'Removed from saved homes' : 'Saved to favorites');
       return;

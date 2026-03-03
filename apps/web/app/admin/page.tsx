@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase/client';
+
+const supabase = getSupabaseClient();
 
 const ADMIN_EMAILS = ['admin@homebase.com', 'admin@example.com'];
 

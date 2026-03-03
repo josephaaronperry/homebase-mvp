@@ -2,7 +2,9 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase/client';
+
+const supabase = getSupabaseClient();
 
 type Props = {
   propertyId: string | number;

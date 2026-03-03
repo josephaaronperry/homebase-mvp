@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -18,29 +18,36 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    console.log('[Register] handleSubmit fired', { email: form.email });
     setError('');
     setSuccess(false);
+    setLoading(true);
 
-    const { error: signUpError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: {
-        data: {
-          full_name: form.fullName,
-          phone: form.phone,
+    try {
+      const { error: signUpError } = await getSupabaseClient().auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: {
+          data: {
+            full_name: form.fullName,
+            phone: form.phone,
+          },
         },
-      },
-    });
+      });
 
-    if (signUpError) {
-      setError(signUpError.message ?? 'Registration failed');
+      if (signUpError) {
+        setError(signUpError.message ?? 'Registration failed');
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Registration failed';
+      setError(message);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(false);
-    setSuccess(true);
   };
 
   return (
@@ -161,5 +168,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,22 +18,31 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    console.log('[Login] handleSubmit fired', { email: form.email, redirectTo });
     setError('');
+    setLoading(true);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: form.email,
-      password: form.password,
-    });
+    try {
+      const { error: signInError } = await getSupabaseClient().auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      });
 
-    if (signInError) {
-      setError(signInError.message ?? 'Login failed');
+      if (signInError) {
+        setError(signInError.message ?? 'Login failed');
+        setLoading(false);
+        return;
+      }
+
       setLoading(false);
-      return;
+      // Refresh so the server (middleware) sees the new session cookies, then navigate
+      router.refresh();
+      router.push(redirectTo || '/dashboard');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Sign in failed';
+      setError(message);
+      setLoading(false);
     }
-
-    setLoading(false);
-    router.push(redirectTo);
   };
 
   const handleGoogle = async () => {
@@ -45,17 +54,18 @@ export default function LoginPage() {
           ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
           : undefined;
 
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      const { error: oauthError } = await getSupabaseClient().auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: callbackUrl },
       });
 
       if (oauthError) {
         setError(oauthError.message ?? 'Google sign-in failed');
-        setOauthLoading(false);
       }
-    } catch {
-      setError('Google sign-in failed');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Google sign-in failed';
+      setError(message);
+    } finally {
       setOauthLoading(false);
     }
   };

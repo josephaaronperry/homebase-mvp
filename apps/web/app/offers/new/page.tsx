@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase/client';
+
+const supabase = getSupabaseClient();
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -66,14 +68,31 @@ export default function NewOfferPage() {
         return;
       }
       if (propertyId) {
-        const { data } = await supabase
-          .from('properties')
-          .select('id, title, address, city, state, price')
-          .eq('id', propertyId)
-          .maybeSingle();
+        const [propRes, preApprovalRes] = await Promise.all([
+          supabase
+            .from('properties')
+            .select('id, title, address, city, state, price')
+            .eq('id', propertyId)
+            .maybeSingle(),
+          supabase
+            .from('pre_approvals')
+            .select('id')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
+        const data = propRes.data;
         setProperty((data ?? null) as Property | null);
         if (data?.price) {
           setForm((f) => ({ ...f, offer_price: Number((data as { price: number }).price) }));
+        }
+        if (!preApprovalRes.data && propRes.data) {
+          const redirectUrl = `/offers/new?propertyId=${propertyId}`;
+          router.replace(
+            `/preapproval?redirect=${encodeURIComponent(redirectUrl)}&message=${encodeURIComponent('Get pre-approved first, then return here to submit your offer.')}`
+          );
+          return;
         }
       }
       setLoading(false);
@@ -135,8 +154,25 @@ export default function NewOfferPage() {
       alert(error.message ?? 'Failed to submit offer');
       return;
     }
-    setSubmittedOffer(data as { id: string; price: number; status: string });
-  }, [form, propertyId, property]);
+    const offerData = data as { id: string; price: number; status: string };
+    if (propertyId) {
+      const stageCompletedAt: Record<string, string> = { offer_submitted: new Date().toISOString() };
+      await supabase.from('buying_pipelines').upsert(
+        {
+          user_id: user.id,
+          property_id: propertyId,
+          offer_id: offerData.id,
+          current_stage: 'offer_submitted',
+          stage_completed_at: stageCompletedAt,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,property_id' }
+      );
+      router.replace(`/dashboard/buying/${propertyId}`);
+      return;
+    }
+    setSubmittedOffer(offerData);
+  }, [form, propertyId, property, router]);
 
   if (loading) {
     return (

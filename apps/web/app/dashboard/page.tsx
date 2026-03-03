@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase/client';
+
+const supabase = getSupabaseClient();
 import { PropertyCard } from '@/components/PropertyCard';
 
 type SavedPreview = {
@@ -49,6 +51,16 @@ type ViewedProperty = {
   image_url: string | null;
 };
 
+type PipelinePreview = {
+  id: string;
+  property_id: string;
+  current_stage: string;
+  property_address: string | null;
+  property_city: string | null;
+  property_state: string | null;
+  property_price: number | null;
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const [userName, setUserName] = useState<string | null>(null);
@@ -60,6 +72,7 @@ export default function DashboardPage() {
   const [offers, setOffers] = useState<OfferPreview[]>([]);
   const [viewed, setViewed] = useState<ViewedProperty[]>([]);
   const [acceptedOffer, setAcceptedOffer] = useState<OfferPreview | null>(null);
+  const [pipelines, setPipelines] = useState<PipelinePreview[]>([]);
   const [loading, setLoading] = useState(true);
   const [kycStatus, setKycStatus] = useState<string | null>(null);
 
@@ -85,6 +98,7 @@ export default function DashboardPage() {
         offersRes,
         kycRes,
         viewedRes,
+        pipelinesRes,
       ] = await Promise.all([
         supabase.from('properties').select('*', { count: 'exact', head: true }),
         supabase.from('saved_properties').select('*', { count: 'exact', head: true }),
@@ -123,6 +137,11 @@ export default function DashboardPage() {
           .eq('user_id', user.id)
           .order('viewed_at', { ascending: false })
           .limit(4),
+        supabase
+          .from('buying_pipelines')
+          .select('id, property_id, current_stage')
+          .eq('user_id', user.id)
+          .neq('current_stage', 'closing'),
       ]);
 
       setStats({
@@ -148,6 +167,26 @@ export default function DashboardPage() {
           .select('id, title, address, city, state, price, image_url')
           .in('id', viewedIds);
         setViewed((props ?? []) as ViewedProperty[]);
+      }
+
+      const pipelineRows = (pipelinesRes.data ?? []) as { id: string; property_id: string; current_stage: string }[];
+      if (pipelineRows.length > 0) {
+        const { data: props } = await supabase
+          .from('properties')
+          .select('id, address, city, state, price')
+          .in('id', pipelineRows.map((p) => p.property_id));
+        const propMap = new Map((props ?? []).map((p: { id: string; address: string | null; city: string | null; state: string | null; price: number | null }) => [p.id, p]));
+        setPipelines(
+          pipelineRows.map((row) => ({
+            id: row.id,
+            property_id: row.property_id,
+            current_stage: row.current_stage,
+            property_address: (propMap.get(row.property_id) as { address: string | null } | undefined)?.address ?? null,
+            property_city: (propMap.get(row.property_id) as { city: string | null } | undefined)?.city ?? null,
+            property_state: (propMap.get(row.property_id) as { state: string | null } | undefined)?.state ?? null,
+            property_price: (propMap.get(row.property_id) as { price: number | null } | undefined)?.price ?? null,
+          }))
+        );
       }
 
       setLoading(false);
@@ -309,6 +348,43 @@ export default function DashboardPage() {
               {acceptedOffer.status}
             </span>
           </Link>
+        )}
+
+        {/* Active transactions (buying pipelines) */}
+        {pipelines.length > 0 && (
+          <div className="mb-6 rounded-3xl border border-slate-800 bg-slate-950/80 p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">
+              Active transactions
+            </p>
+            <p className="mt-1 text-sm text-slate-400">
+              Properties you’re pursuing — track each deal in the buying pipeline.
+            </p>
+            <div className="mt-4 space-y-2">
+              {pipelines.map((pipe) => (
+                <Link
+                  key={pipe.id}
+                  href={`/dashboard/buying/${pipe.property_id}`}
+                  className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 hover:border-emerald-500/50"
+                >
+                  <div>
+                    <p className="font-medium text-slate-50">
+                      {pipe.property_address ?? 'Property'}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {pipe.property_city}, {pipe.property_state}
+                      {pipe.property_price != null && ` • $${pipe.property_price.toLocaleString()}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-slate-700/60 px-2.5 py-1 text-[11px] font-semibold uppercase text-slate-300">
+                      {pipe.current_stage.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-slate-500">→</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
         )}
 
         <section className="mb-6 grid gap-6 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
