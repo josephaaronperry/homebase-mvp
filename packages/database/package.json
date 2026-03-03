@@ -5,10 +5,14 @@
   "scripts": {
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' seed.ts"
+    "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' seed.ts",
+    "seed:more": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' seed-more.ts",
+    "migrate": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' migrate.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.13.0"
+    "@prisma/client": "^5.13.0",
+    "@supabase/supabase-js": "^2.98.0",
+    "pg": "^8.13.0"
   },
   "devDependencies": {
     "prisma": "^5.13.0",
