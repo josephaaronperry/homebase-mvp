@@ -91,6 +91,7 @@ export default function PreApprovalPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    const propertyId = searchParams.get('propertyId');
     const { min, max } = estimateApprovalRange(
       form.annual_income,
       form.monthly_debts,
@@ -114,9 +115,24 @@ export default function PreApprovalPage() {
       alert(error.message ?? 'Failed to save pre-approval');
       return;
     }
+    if (propertyId) {
+      const stageCompletedAt = { pre_approval: new Date().toISOString() };
+      await supabase.from('buying_pipelines').upsert(
+        {
+          user_id: user.id,
+          property_id: propertyId,
+          current_stage: 'pre_approval',
+          stage_completed_at: stageCompletedAt,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,property_id' }
+      );
+      router.replace(`/dashboard/buying/${propertyId}`);
+      return;
+    }
     setEstimate({ min, max });
     setSubmitted(true);
-  }, [form]);
+  }, [form, searchParams, router]);
 
   if (loading) {
     return (

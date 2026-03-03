@@ -26,34 +26,43 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [password, setPassword] = useState({ new: '', confirm: '' });
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   useEffect(() => {
     const load = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.replace('/login');
         return;
       }
-
-      setProfile({
-        email: user.email ?? null,
-        full_name: (user.user_metadata as { full_name?: string })?.full_name ?? '',
-        phone: (user.user_metadata as { phone?: string })?.phone ?? '',
-      });
-      const { data: kyc } = await supabase
-        .from('kyc_submissions')
-        .select('status')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data: row } = await supabase.from('profiles').select('full_name, phone, email').eq('id', user.id).maybeSingle();
+      if (row) {
+        setProfile({
+          email: (row as { email: string | null }).email ?? user.email ?? null,
+          full_name: (row as { full_name: string | null }).full_name ?? (user.user_metadata as { full_name?: string })?.full_name ?? '',
+          phone: (row as { phone: string | null }).phone ?? (user.user_metadata as { phone?: string })?.phone ?? '',
+        });
+      } else {
+        setProfile({
+          email: user.email ?? null,
+          full_name: (user.user_metadata as { full_name?: string })?.full_name ?? '',
+          phone: (user.user_metadata as { phone?: string })?.phone ?? '',
+        });
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          full_name: (user.user_metadata as { full_name?: string })?.full_name ?? null,
+          phone: (user.user_metadata as { phone?: string })?.phone ?? null,
+          email: user.email ?? null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'id' });
+      }
+      const { data: kyc } = await supabase.from('kyc_submissions').select('status').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
       setIsVerified((kyc as { status?: string } | null)?.status === 'APPROVED');
       setLoading(false);
     };
-
     load();
   }, [router]);
 
@@ -62,22 +71,46 @@ export default function ProfilePage() {
     setSaving(true);
     setError('');
     setSuccess(false);
-
-    const { error: updateError } = await supabase.auth.updateUser({
-      data: {
-        full_name: profile.full_name,
-        phone: profile.phone,
-      },
-    });
-
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error: updateError } = await supabase.from('profiles').upsert({
+      id: user.id,
+      full_name: profile.full_name || null,
+      phone: profile.phone || null,
+      email: user.email ?? null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
     if (updateError) {
       setError(updateError.message ?? 'Failed to update profile');
       setSaving(false);
       return;
     }
-
+    await supabase.auth.updateUser({ data: { full_name: profile.full_name, phone: profile.phone } });
     setSaving(false);
     setSuccess(true);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess(false);
+    if (password.new.length < 8) {
+      setPasswordError('Password must be at least 8 characters.');
+      return;
+    }
+    if (password.new !== password.confirm) {
+      setPasswordError('Passwords do not match.');
+      return;
+    }
+    setPasswordSaving(true);
+    const { error: pwError } = await supabase.auth.updateUser({ password: password.new });
+    setPasswordSaving(false);
+    if (pwError) {
+      setPasswordError(pwError.message ?? 'Failed to update password.');
+      return;
+    }
+    setPasswordSuccess(true);
+    setPassword({ new: '', confirm: '' });
   };
 
   if (loading) {
@@ -92,15 +125,10 @@ export default function ProfilePage() {
     <div className="flex min-h-screen flex-1 flex-col bg-slate-950 text-slate-50">
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         <header className="mb-6 flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="rounded-full border border-slate-800/80 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-emerald-500/60"
-          >
+          <Link href="/dashboard" className="rounded-full border border-slate-800/80 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-emerald-500/60">
             ← Dashboard
           </Link>
-          <h1 className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-400">
-            Profile
-          </h1>
+          <h1 className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-400">Profile</h1>
         </header>
 
         <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/80 p-5 shadow-2xl shadow-black/40">
@@ -110,106 +138,54 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1 text-sm">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-50">
-                  {profile.full_name || 'Your name'}
-                </span>
+                <span className="font-semibold text-slate-50">{profile.full_name || 'Your name'}</span>
                 {isVerified ? (
-                  <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
-                    ✓ Verified
-                  </span>
+                  <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">✓ Verified</span>
                 ) : (
-                  <Link
-                    href="/verify"
-                    className="rounded-full border border-amber-500/50 px-2 py-0.5 text-[10px] font-semibold text-amber-300 hover:bg-amber-500/10"
-                  >
+                  <Link href="/verify" className="rounded-full border border-amber-500/50 px-2 py-0.5 text-[10px] font-semibold text-amber-300 hover:bg-amber-500/10">
                     Verify identity
                   </Link>
                 )}
               </div>
-              <div className="text-xs text-slate-400">
-                {profile.email ?? 'No email'}
-              </div>
+              <div className="text-xs text-slate-400">{profile.email ?? 'No email'}</div>
             </div>
           </div>
 
-          {error && (
-            <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-xs text-rose-100">
-              {error}
-            </div>
-          )}
-          {success && (
-            <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-xs text-emerald-100">
-              Profile updated successfully.
-            </div>
-          )}
+          {error && <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-xs text-rose-100">{error}</div>}
+          {success && <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-xs text-emerald-100">Profile updated successfully.</div>}
 
           <form onSubmit={handleSave} className="mt-2 space-y-4 text-sm">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-200">
-                Full name
-              </label>
-              <input
-                className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none ring-emerald-500/60 focus:border-emerald-500/60"
-                value={profile.full_name ?? ''}
-                onChange={(e) =>
-                  setProfile((p) => ({ ...p, full_name: e.target.value }))
-                }
-                placeholder="Your name"
-              />
+              <label className="mb-1 block text-xs font-medium text-slate-200">Display name</label>
+              <input className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none focus:border-emerald-500/60" value={profile.full_name ?? ''} onChange={(e) => setProfile((p) => ({ ...p, full_name: e.target.value }))} placeholder="Your name" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-200">
-                Phone
-              </label>
-              <input
-                className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none ring-emerald-500/60 focus:border-emerald-500/60"
-                value={profile.phone ?? ''}
-                onChange={(e) =>
-                  setProfile((p) => ({ ...p, phone: e.target.value }))
-                }
-                placeholder="+1 (555) 000-0000"
-              />
+              <label className="mb-1 block text-xs font-medium text-slate-200">Phone</label>
+              <input className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none focus:border-emerald-500/60" value={profile.phone ?? ''} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} placeholder="+1 (555) 000-0000" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-200">
-                Email
-              </label>
-              <input
-                className="w-full cursor-not-allowed rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-400"
-                value={profile.email ?? ''}
-                readOnly
-              />
+              <label className="mb-1 block text-xs font-medium text-slate-200">Email</label>
+              <input className="w-full cursor-not-allowed rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-400" value={profile.email ?? ''} readOnly />
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-200">
-                Profile photo
-              </label>
-              <div className="flex items-center gap-3 text-xs text-slate-400">
-                <div className="h-10 w-10 rounded-full bg-slate-800" />
-                <button
-                  type="button"
-                  className="rounded-full border border-slate-700 px-3 py-1 text-[11px] font-semibold text-slate-200 hover:border-emerald-500/60"
-                >
-                  Upload photo
-                </button>
-                <span className="text-[11px]">
-                  Photo uploads are stored via Supabase Storage (configure
-                  separately).
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="mt-2 w-full rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/40 hover:bg-emerald-400 disabled:opacity-70"
-            >
+            <button type="submit" disabled={saving} className="mt-2 w-full rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-70">
               {saving ? 'Saving…' : 'Save changes'}
             </button>
           </form>
+
+          <div className="border-t border-slate-800 pt-4 mt-6">
+            <h2 className="text-sm font-semibold text-slate-200">Change password</h2>
+            {passwordError && <div className="mt-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">{passwordError}</div>}
+            {passwordSuccess && <div className="mt-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">Password updated.</div>}
+            <form onSubmit={handleChangePassword} className="mt-3 space-y-3">
+              <input type="password" value={password.new} onChange={(e) => setPassword((p) => ({ ...p, new: e.target.value }))} placeholder="New password" className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500" minLength={8} />
+              <input type="password" value={password.confirm} onChange={(e) => setPassword((p) => ({ ...p, confirm: e.target.value }))} placeholder="Confirm new password" className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500" />
+              <button type="submit" disabled={passwordSaving || !password.new || !password.confirm} className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-emerald-500/60 disabled:opacity-50">
+                {passwordSaving ? 'Updating…' : 'Update password'}
+              </button>
+            </form>
+          </div>
         </section>
       </main>
     </div>
   );
 }
-

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { getStageLabel } from '@/lib/pipeline-stages';
 
 const supabase = getSupabaseClient();
 import { PropertyCard } from '@/components/PropertyCard';
@@ -74,6 +75,7 @@ export default function DashboardPage() {
   const [acceptedOffer, setAcceptedOffer] = useState<OfferPreview | null>(null);
   const [pipelines, setPipelines] = useState<PipelinePreview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [kycStatus, setKycStatus] = useState<string | null>(null);
 
   useEffect(() => {
@@ -87,6 +89,7 @@ export default function DashboardPage() {
         return;
       }
 
+      setError(null);
       setEmail(user.email ?? null);
       setUserName((user.user_metadata as { full_name?: string })?.full_name ?? user.email ?? 'there');
 
@@ -144,6 +147,11 @@ export default function DashboardPage() {
           .neq('current_stage', 'closing'),
       ]);
 
+      if (savedRes.error || showingsRes.error || offersRes.error || pipelinesRes.error) {
+        setError(savedRes.error?.message ?? showingsRes.error?.message ?? offersRes.error?.message ?? pipelinesRes.error?.message ?? 'Failed to load dashboard');
+        setLoading(false);
+        return;
+      }
       setStats({
         total: totalProperties ?? 0,
         saved: savedCount ?? 0,
@@ -282,6 +290,12 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {error && (
+          <div className="mb-6 rounded-2xl border border-rose-500/40 bg-rose-500/10 px-5 py-4 text-sm text-rose-100">
+            {error}
+          </div>
+        )}
+
         {/* Empty state: getting started */}
         {!loading && stats.saved === 0 && showings.length === 0 && offers.length === 0 && !acceptedOffer && (
           <div className="mb-8 rounded-3xl border border-slate-800 bg-slate-900/50 p-8">
@@ -377,7 +391,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="rounded-full bg-slate-700/60 px-2.5 py-1 text-[11px] font-semibold uppercase text-slate-300">
-                      {pipe.current_stage.replace(/_/g, ' ')}
+                      {getStageLabel(pipe.current_stage)}
                     </span>
                     <span className="text-slate-500">→</span>
                   </div>

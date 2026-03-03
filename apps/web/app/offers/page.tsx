@@ -22,28 +22,24 @@ export default function OffersPage() {
   const router = useRouter();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.replace('/login');
         return;
       }
-
-      const { data } = await supabase
+      setError(null);
+      const { data, error: err } = await supabase
         .from('offers')
-        .select(
-          'id, price, list_price, status, property_address, property_city, property_state',
-        )
+        .select('id, price, list_price, status, property_address, property_city, property_state')
         .order('created_at', { ascending: false });
-
-      setOffers((data ?? []) as Offer[]);
+      if (err) setError(err.message ?? 'Failed to load offers');
+      else setOffers((data ?? []) as Offer[]);
       setLoading(false);
     };
-
     load();
   }, [router]);
 
@@ -82,6 +78,12 @@ export default function OffersPage() {
             </p>
           </div>
         </div>
+
+        {error && (
+          <div className="mb-4 rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            {error}
+          </div>
+        )}
 
         {loading ? (
           <div className="space-y-3">

@@ -5,6 +5,7 @@ export const PIPELINE_STAGES = [
   { id: 'inspection_booked', label: 'Inspection Booked', description: 'Schedule and complete the home inspection.' },
   { id: 'appraisal', label: 'Appraisal', description: 'Property appraisal ordered and completed.' },
   { id: 'lender_selection', label: 'Lender Selection', description: 'Choose your mortgage lender.' },
+  { id: 'lender_selected', label: 'Lender Selected', description: 'You have chosen your mortgage lender.' },
   { id: 'loan_processing', label: 'Loan Processing', description: 'Loan is being processed by your lender.' },
   { id: 'clear_to_close', label: 'Clear to Close', description: 'Lender has cleared you to close.' },
   { id: 'closing', label: 'Closing', description: 'Sign documents and get the keys.' },
@@ -20,14 +21,20 @@ export function getStageIndex(stageId: string): number {
 export function getStageStatus(
   stageId: string,
   currentStage: string,
-  stageCompletedAt: Record<string, string>
+  stageCompletedAt: Record<string, string> | null
 ): 'pending' | 'active' | 'complete' {
+  const completed = stageCompletedAt ?? {};
+  if (completed[stageId]) return 'complete';
   const currentIdx = getStageIndex(currentStage);
   const thisIdx = getStageIndex(stageId);
-  if (stageCompletedAt[stageId]) return 'complete';
   if (thisIdx < currentIdx) return 'complete';
   if (thisIdx === currentIdx) return 'active';
   return 'pending';
+}
+
+export function getStageLabel(stageId: string): string {
+  const stage = PIPELINE_STAGES.find((s) => s.id === stageId);
+  return stage?.label ?? stageId.replace(/_/g, ' ');
 }
 
 export function getCtaForStage(stageId: string, propertyId?: string): { label: string; href: string } | null {

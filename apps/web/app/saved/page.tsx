@@ -24,26 +24,24 @@ export default function SavedPage() {
   const router = useRouter();
   const [saved, setSaved] = useState<SavedProperty[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.replace('/login');
         return;
       }
-
-      const { data } = await supabase
+      setError(null);
+      const { data, error: err } = await supabase
         .from('saved_properties_with_details')
         .select('*')
         .order('created_at', { ascending: false });
-
-      setSaved((data ?? []) as SavedProperty[]);
+      if (err) setError(err.message ?? 'Failed to load saved homes');
+      else setSaved((data ?? []) as SavedProperty[]);
       setLoading(false);
     };
-
     load();
   }, [router]);
 
@@ -73,6 +71,11 @@ export default function SavedPage() {
       </header>
 
       <main className="rounded-3xl border border-slate-800 bg-slate-950/80 p-5 shadow-2xl shadow-black/40">
+        {error && (
+          <div className="mb-4 rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            {error}
+          </div>
+        )}
         {loading ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (

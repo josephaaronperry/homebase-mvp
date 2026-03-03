@@ -146,25 +146,22 @@ export function Navbar() {
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setUserOpen(false)} aria-hidden />
                   <div className="absolute right-0 top-full z-50 mt-1 min-w-[11rem] rounded-xl border border-slate-800 bg-slate-950 py-2 shadow-xl">
-                    <Link
-                      href="/dashboard"
-                      className="block px-4 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-slate-50"
-                      onClick={() => setUserOpen(false)}
-                    >
+                    <Link href="/dashboard" className="block px-4 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-slate-50" onClick={() => setUserOpen(false)}>
                       Dashboard
                     </Link>
-                    <Link
-                      href="/dashboard"
-                      className="block px-4 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-slate-50"
-                      onClick={() => setUserOpen(false)}
-                    >
+                    <Link href="/offers" className="block px-4 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-slate-50" onClick={() => setUserOpen(false)}>
+                      My offers
+                    </Link>
+                    <Link href="/saved" className="block px-4 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-slate-50" onClick={() => setUserOpen(false)}>
+                      Saved homes
+                    </Link>
+                    <Link href="/sell" className="block px-4 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-slate-50" onClick={() => setUserOpen(false)}>
+                      Sell a home
+                    </Link>
+                    <Link href="/profile" className="block px-4 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-slate-50" onClick={() => setUserOpen(false)}>
                       Profile
                     </Link>
-                    <button
-                      type="button"
-                      onClick={handleSignOut}
-                      className="w-full px-4 py-2 text-left text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-slate-50"
-                    >
+                    <button type="button" onClick={handleSignOut} className="w-full px-4 py-2 text-left text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-slate-50">
                       Sign out
                     </button>
                   </div>

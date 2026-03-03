@@ -46,6 +46,7 @@ export default function InspectionsPage() {
   const searchParams = useSearchParams();
   const propertyId = searchParams.get('propertyId');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
   const [propertyAddress, setPropertyAddress] = useState<string | null>(null);
@@ -62,22 +63,17 @@ export default function InspectionsPage() {
         router.replace('/login');
         return;
       }
+      setError(null);
       if (propertyId) {
         const [pipeRes, propRes] = await Promise.all([
-          supabase
-            .from('buying_pipelines')
-            .select('id, property_id')
-            .eq('user_id', user.id)
-            .eq('property_id', propertyId)
-            .maybeSingle(),
-          supabase
-            .from('properties')
-            .select('address')
-            .eq('id', propertyId)
-            .maybeSingle(),
+          supabase.from('buying_pipelines').select('id, property_id').eq('user_id', user.id).eq('property_id', propertyId).maybeSingle(),
+          supabase.from('properties').select('address').eq('id', propertyId).maybeSingle(),
         ]);
-        setPipeline((pipeRes.data ?? null) as Pipeline | null);
-        setPropertyAddress((propRes.data as { address: string } | null)?.address ?? null);
+        if (pipeRes.error || propRes.error) setError(pipeRes.error?.message ?? propRes.error?.message ?? 'Failed to load');
+        else {
+          setPipeline((pipeRes.data ?? null) as Pipeline | null);
+          setPropertyAddress((propRes.data as { address: string } | null)?.address ?? null);
+        }
       }
       setLoading(false);
     };
@@ -121,6 +117,17 @@ export default function InspectionsPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950">
         <div className="h-12 w-12 animate-pulse rounded-full border-2 border-emerald-500/40" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
+        <main className="mx-auto w-full max-w-2xl px-4 py-8">
+          <Link href={propertyId ? `/dashboard/buying/${propertyId}` : '/dashboard'} className="mb-6 inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-emerald-400">← {propertyId ? 'Pipeline' : 'Dashboard'}</Link>
+          <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{error}</div>
+        </main>
       </div>
     );
   }

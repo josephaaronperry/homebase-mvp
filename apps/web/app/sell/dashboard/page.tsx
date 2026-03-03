@@ -9,19 +9,35 @@ const supabase = getSupabaseClient();
 
 type Listing = {
   id: string;
+  property_id: string;
+  status: string;
   address: string | null;
   city: string | null;
   state: string | null;
   price: number | null;
-  status: string | null;
 };
+
+function statusLabel(s: string): string {
+  if (s === 'pending_review') return 'Pending Review';
+  if (s === 'active') return 'Active';
+  if (s === 'sold') return 'Sold';
+  if (s === 'withdrawn') return 'Withdrawn';
+  return s;
+}
+
+function statusClass(s: string): string {
+  if (s === 'pending_review') return 'bg-amber-500/15 text-amber-300';
+  if (s === 'active') return 'bg-emerald-500/15 text-emerald-300';
+  if (s === 'sold') return 'bg-slate-600 text-slate-200';
+  if (s === 'withdrawn') return 'bg-slate-600 text-slate-400';
+  return 'bg-slate-700/60 text-slate-300';
+}
 
 export default function SellDashboardPage() {
   const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
-  const [offerCounts, setOfferCounts] = useState<Record<string, number>>({});
-  const [showingCounts, setShowingCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -30,25 +46,27 @@ export default function SellDashboardPage() {
         router.replace('/login');
         return;
       }
-      const { data: props } = await supabase
-        .from('properties')
-        .select('id, address, city, state, price, status')
-        .eq('status', 'PENDING_REVIEW');
-      setListings((props ?? []) as Listing[]);
-
-      const { data: offers } = await supabase.from('offers').select('property_id');
-      const counts: Record<string, number> = {};
-      (offers ?? []).forEach((o: { property_id: string }) => {
-        counts[o.property_id] = (counts[o.property_id] ?? 0) + 1;
-      });
-      setOfferCounts(counts);
-
-      const { data: showings } = await supabase.from('showings').select('property_id');
-      const showCounts: Record<string, number> = {};
-      (showings ?? []).forEach((s: { property_id: string }) => {
-        showCounts[s.property_id] = (showCounts[s.property_id] ?? 0) + 1;
-      });
-      setShowingCounts(showCounts);
+      setError(null);
+      const { data: rows, error: listErr } = await supabase.from('seller_listings').select('id, property_id, status').eq('user_id', user.id).order('created_at', { ascending: false });
+      if (listErr) {
+        setError(listErr.message ?? 'Failed to load listings');
+        setLoading(false);
+        return;
+      }
+      if (rows && rows.length > 0) {
+        const ids = rows.map((r: { property_id: string }) => r.property_id);
+        const { data: props, error: propErr } = await supabase.from('properties').select('id, address, city, state, price').in('id', ids);
+        if (propErr) setError(propErr.message ?? 'Failed to load property details');
+        else {
+          const propMap = new Map((props ?? []).map((p: { id: string; address: string | null; city: string | null; state: string | null; price: number | null }) => [p.id, p]));
+          setListings(
+            (rows as { id: string; property_id: string; status: string }[]).map((r) => {
+              const p = propMap.get(r.property_id) as { address: string | null; city: string | null; state: string | null; price: number | null } | undefined;
+              return { id: r.id, property_id: r.property_id, status: r.status, address: p?.address ?? null, city: p?.city ?? null, state: p?.state ?? null, price: p?.price ?? null };
+            })
+          );
+        }
+      }
       setLoading(false);
     };
     load();
@@ -63,12 +81,15 @@ export default function SellDashboardPage() {
         <h1 className="text-2xl font-semibold text-slate-50">Seller dashboard</h1>
         <p className="mt-1 text-sm text-slate-400">Your listings and activity</p>
 
-        <Link
-          href="/sell/list"
-          className="mt-6 inline-block rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400"
-        >
+        <Link href="/sell/list" className="mt-6 inline-block rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400">
           + New listing
         </Link>
+
+        {error && (
+          <div className="mt-6 rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            {error}
+          </div>
+        )}
 
         {loading ? (
           <div className="mt-6 space-y-3">
@@ -77,31 +98,35 @@ export default function SellDashboardPage() {
             ))}
           </div>
         ) : listings.length === 0 ? (
-          <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center text-sm text-slate-400">
-            No listings yet. Create your first listing to get started.
+          <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center">
+            <p className="text-4xl mb-3">🏠</p>
+            <p className="text-sm text-slate-400">No listings yet. Create your first listing to get started.</p>
+            <Link href="/sell/list" className="mt-4 inline-block rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400">+ New listing</Link>
           </div>
         ) : (
           <div className="mt-6 space-y-3">
             {listings.map((l) => (
-              <div
-                key={l.id}
-                className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3"
-              >
+              <div key={l.id} className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3">
                 <div>
                   <div className="text-sm font-medium text-slate-100">
-                    {l.address}, {l.city}, {l.state}
+                    {l.address ?? 'Property'}, {l.city}, {l.state}
                   </div>
-                  <div className="text-xs text-slate-500">
-                    ${l.price?.toLocaleString() ?? '—'} • {l.status}
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-xs text-slate-500">
+                      ${l.price?.toLocaleString() ?? '—'}
+                    </span>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusClass(l.status)}`}>
+                      {statusLabel(l.status)}
+                    </span>
                   </div>
                 </div>
-                <div className="flex gap-3 text-xs">
-                  <span className="rounded-full bg-sky-500/15 px-2 py-1 text-sky-300">
-                    {offerCounts[l.id] ?? 0} offers
-                  </span>
-                  <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-emerald-300">
-                    {showingCounts[l.id] ?? 0} showings
-                  </span>
+                <div className="flex items-center gap-3">
+                  <Link href={`/properties/${l.property_id}`} className="text-xs font-semibold text-emerald-400 hover:text-emerald-300">
+                    View listing
+                  </Link>
+                  <Link href={`/sell/list/${l.property_id}`} className="text-xs font-medium text-slate-400 hover:text-slate-300">
+                    Edit listing
+                  </Link>
                 </div>
               </div>
             ))}

@@ -5,6 +5,17 @@ import Link from 'next/link';
 
 import { getSupabaseClient } from '@/lib/supabase/client';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateEmail(email: string): string | null {
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed) return 'Email is required.';
+  if (trimmed.length > 254) return 'Email is too long.';
+  if (!EMAIL_REGEX.test(trimmed)) return 'Please enter a valid email address (e.g. you@example.com).';
+  if (trimmed.includes('..') || trimmed.startsWith('.') || trimmed.endsWith('.')) return 'Please enter a valid email address.';
+  return null;
+}
+
 export default function RegisterPage() {
   const [form, setForm] = useState({
     fullName: '',
@@ -18,16 +29,25 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[Register] handleSubmit fired', { email: form.email });
     setError('');
     setSuccess(false);
-    setLoading(true);
 
+    const emailError = validateEmail(form.email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
+
+    setLoading(true);
     try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+      const redirectTo = `${siteUrl}/auth/callback?next=/dashboard`;
+
       const { error: signUpError } = await getSupabaseClient().auth.signUp({
-        email: form.email,
+        email: form.email.trim().toLowerCase(),
         password: form.password,
         options: {
+          emailRedirectTo: redirectTo,
           data: {
             full_name: form.fullName,
             phone: form.phone,
@@ -75,9 +95,8 @@ export default function RegisterPage() {
         )}
 
         {success && (
-          <div className="mb-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-xs text-emerald-100">
-            Account created. Please check your email to confirm your address
-            before signing in.
+          <div className="mb-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+            Check your email — we sent you a confirmation link. Click it to activate your account, then sign in.
           </div>
         )}
 

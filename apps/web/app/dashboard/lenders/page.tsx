@@ -29,6 +29,7 @@ export default function LendersPage() {
   const searchParams = useSearchParams();
   const propertyId = searchParams.get('propertyId');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selecting, setSelecting] = useState<string | null>(null);
   const [preApproval, setPreApproval] = useState<PreApproval | null>(null);
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
@@ -41,15 +42,19 @@ export default function LendersPage() {
         router.replace('/login');
         return;
       }
+      setError(null);
       if (propertyId) {
         const [preRes, pipeRes, propRes] = await Promise.all([
           supabase.from('pre_approvals').select('estimated_min, estimated_max').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('buying_pipelines').select('id, property_id').eq('user_id', user.id).eq('property_id', propertyId).maybeSingle(),
           supabase.from('properties').select('address').eq('id', propertyId).maybeSingle(),
         ]);
-        setPreApproval((preRes.data ?? null) as PreApproval | null);
-        setPipeline((pipeRes.data ?? null) as Pipeline | null);
-        setPropertyAddress((propRes.data as { address: string } | null)?.address ?? null);
+        if (pipeRes.error || propRes.error) setError(pipeRes.error?.message ?? propRes.error?.message ?? 'Failed to load');
+        else {
+          setPreApproval((preRes.data ?? null) as PreApproval | null);
+          setPipeline((pipeRes.data ?? null) as Pipeline | null);
+          setPropertyAddress((propRes.data as { address: string } | null)?.address ?? null);
+        }
       }
       setLoading(false);
     };
@@ -82,9 +87,9 @@ export default function LendersPage() {
     }
     const completedRes = await supabase.from('buying_pipelines').select('stage_completed_at').eq('id', pipeline.id).single();
     const completed = (completedRes.data as { stage_completed_at: Record<string, string> } | null)?.stage_completed_at ?? {};
-    const nextCompleted = { ...completed, lender_selection: new Date().toISOString() };
+    const nextCompleted = { ...completed, lender_selected: new Date().toISOString() };
     await supabase.from('buying_pipelines').update({
-      current_stage: 'lender_selection',
+      current_stage: 'lender_selected',
       stage_completed_at: nextCompleted,
       updated_at: new Date().toISOString(),
     }).eq('id', pipeline.id);
@@ -96,6 +101,17 @@ export default function LendersPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950">
         <div className="h-12 w-12 animate-pulse rounded-full border-2 border-emerald-500/40" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
+        <main className="mx-auto w-full max-w-2xl px-4 py-8">
+          <Link href={propertyId ? `/dashboard/buying/${propertyId}` : '/dashboard'} className="mb-6 inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-emerald-400">← {propertyId ? 'Pipeline' : 'Dashboard'}</Link>
+          <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{error}</div>
+        </main>
       </div>
     );
   }

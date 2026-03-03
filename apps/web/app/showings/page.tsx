@@ -22,28 +22,24 @@ export default function ShowingsPage() {
   const router = useRouter();
   const [showings, setShowings] = useState<Showing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.replace('/login');
         return;
       }
-
-      const { data } = await supabase
+      setError(null);
+      const { data, error: err } = await supabase
         .from('showings')
-        .select(
-          'id, property_address, property_city, property_state, scheduled_at, status, tour_type',
-        )
+        .select('id, property_address, property_city, property_state, scheduled_at, status, tour_type')
         .order('scheduled_at', { ascending: true });
-
-      setShowings((data ?? []) as Showing[]);
+      if (err) setError(err.message ?? 'Failed to load showings');
+      else setShowings((data ?? []) as Showing[]);
       setLoading(false);
     };
-
     load();
   }, [router]);
 
@@ -80,6 +76,12 @@ export default function ShowingsPage() {
             Upcoming and past home tours in one place.
           </p>
         </div>
+
+        {error && (
+          <div className="mb-4 rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            {error}
+          </div>
+        )}
 
         {loading ? (
           <div className="space-y-3">
