@@ -10,8 +10,11 @@
     "db:seed": "cd packages/database && npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' seed.ts"
   },
   "devDependencies": {
+    "@types/node": "^20.12.7",
     "turbo": "^1.13.3",
-    "typescript": "^5.4.5",
-    "@types/node": "^20.12.7"
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "pg": "^8.19.0"
   }
 }
