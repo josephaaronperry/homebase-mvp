@@ -1,3 +1,5 @@
-alter table public.buying_pipelines drop constraint if exists buying_pipelines_current_stage_check;
-alter table public.buying_pipelines add constraint buying_pipelines_current_stage_check
-  check (current_stage in ('pre_approval','offer_submitted','offer_accepted','inspection_booked','appraisal','lender_selected','lender_selection','loan_processing','clear_to_close','closing'));
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'buying_pipelines') THEN
+    ALTER TABLE public.buying_pipelines DROP CONSTRAINT IF EXISTS buying_pipelines_current_stage_check;
+  END IF;
+END $$;
