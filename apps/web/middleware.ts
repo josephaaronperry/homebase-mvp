@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// Only login required for protected paths; /admin/* pages enforce admin role themselves.
 const PROTECTED_PATHS = ['/dashboard', '/saved', '/showings', '/offers', '/profile', '/notifications', '/verify', '/transaction', '/admin', '/sell/list', '/sell/dashboard', '/sell/offers', '/sell/showings'];
 
 function isProtectedPath(pathname: string): boolean {

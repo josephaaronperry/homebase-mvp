@@ -98,7 +98,7 @@ export default function AdminPage() {
 
       try {
         const [propRes, profilesRes, offersRes, kycRes] = await Promise.all([
-          supabase.from('properties').select('id, address, city, state, price, status').order('created_at', { ascending: false }),
+          supabase.from('properties').select('id, address, city, state, price, status').order('createdAt', { ascending: false }),
           supabase.from('users').select('id, fullName, email, phone, createdAt').order('createdAt', { ascending: false }),
           supabase.from('offers').select('id, userId, property_id, offerPrice, status').order('createdAt', { ascending: false }),
           supabase.from('kyc_submissions').select('id, user_id, status, full_name, submitted_at, created_at').order('created_at', { ascending: false }),
@@ -130,15 +130,18 @@ export default function AdminPage() {
           buyer_email: profileMap.get(o.userId) ?? null,
         })));
 
-        if (kycRes.error) throw kycRes.error;
-        const kycList = (kycRes.data ?? []) as KycRow[];
-        const kycUserIds = Array.from(new Set(kycList.map((k) => k.user_id)));
-        const kycProfileMap = new Map<string, string>();
-        if (kycUserIds.length > 0) {
-          const { data: kp } = await supabase.from('users').select('id, email').in('id', kycUserIds);
-          (kp ?? []).forEach((p: { id: string; email: string | null }) => { kycProfileMap.set(p.id, p.email ?? ''); });
+        if (kycRes.error) {
+          setKyc([]);
+        } else {
+          const kycList = (kycRes.data ?? []) as KycRow[];
+          const kycUserIds = Array.from(new Set(kycList.map((k) => k.user_id)));
+          const kycProfileMap = new Map<string, string>();
+          if (kycUserIds.length > 0) {
+            const { data: kp } = await supabase.from('users').select('id, email').in('id', kycUserIds);
+            (kp ?? []).forEach((p: { id: string; email: string | null }) => { kycProfileMap.set(p.id, p.email ?? ''); });
+          }
+          setKyc(kycList.map((k) => ({ ...k, user_email: kycProfileMap.get(k.user_id) ?? null })));
         }
-        setKyc(kycList.map((k) => ({ ...k, user_email: kycProfileMap.get(k.user_id) ?? null })));
 
         const dealsRes = await supabase.from('deals').select('id, property_id, buyer_id, seller_id, agreed_price, status, lender_id, created_at').order('created_at', { ascending: false });
         if (dealsRes.error) throw dealsRes.error;
@@ -150,12 +153,12 @@ export default function AdminPage() {
           const [propData, profileData, lenderData, pipelineData] = await Promise.all([
             supabase.from('properties').select('id, address').in('id', propIds),
             supabase.from('users').select('id, email').in('id', buyerSellerIds),
-            lenderIds.length > 0 ? supabase.from('lender_selections').select('id, lender_name').in('id', lenderIds) : Promise.resolve({ data: [] }),
+            lenderIds.length > 0 ? supabase.from('lenders').select('id, name').in('id', lenderIds) : Promise.resolve({ data: [] }),
             supabase.from('buying_pipelines').select('user_id, property_id, current_stage').in('property_id', propIds),
           ]);
           const propMap = new Map((propData.data ?? []).map((p: { id: string; address: string | null }) => [p.id, p.address]));
           const profileMap = new Map((profileData.data ?? []).map((p: { id: string; email: string | null }) => [p.id, p.email ?? '']));
-          const lenderMap = new Map((lenderData.data ?? []).map((l: { id: string; lender_name: string | null }) => [l.id, l.lender_name ?? '']));
+          const lenderMap = new Map((lenderData.data ?? []).map((l: { id: string; name: string | null }) => [l.id, l.name ?? '']));
           const pipelineMap = new Map((pipelineData.data ?? []).map((p: { user_id: string; property_id: string; current_stage: string }) => [`${p.user_id}:${p.property_id}`, p.current_stage]));
           setDeals(
             dealList.map((d) => ({

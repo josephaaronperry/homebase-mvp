@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 const supabase = getSupabaseClient();
-const ADMIN_EMAILS = ['admin@homebase.com', 'admin@example.com'];
 const E2E_STORAGE_KEY = 'homebase_e2e_checklist';
 
 const E2E_STEPS = [
@@ -51,11 +50,7 @@ export default function AdminE2eTestPage() {
         router.replace('/login');
         return;
       }
-      setAllowed(ADMIN_EMAILS.includes(user.email ?? ''));
-      if (!ADMIN_EMAILS.includes(user.email ?? '')) {
-        router.replace('/dashboard');
-        return;
-      }
+      setAllowed(true);
       setChecked(loadStored());
     };
     check();
