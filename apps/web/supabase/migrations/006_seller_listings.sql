@@ -1,7 +1,7 @@
 create table if not exists public.seller_listings (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users not null,
-  property_id uuid references public.properties not null,
+  property_id text references public.properties not null,
   status text not null default 'pending_review',
   created_at timestamptz default now()
 );
