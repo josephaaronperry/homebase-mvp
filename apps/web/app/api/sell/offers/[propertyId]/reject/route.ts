@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service';
 import { createNotification } from '@/lib/notifications';
+import { sendEmail } from '@/lib/email';
+import { offerRejectedEmail } from '@/lib/email-templates';
 
 export async function POST(
   request: NextRequest,
@@ -49,6 +51,17 @@ export async function POST(
       `Your offer on ${address} was declined by the seller.`,
       '/offers'
     );
+    const buyerAuth = await admin.auth.admin.getUserById(buyerId);
+    const buyerEmail = buyerAuth.data?.user?.email;
+    if (buyerEmail) {
+      const { data: profile } = await admin.from('profiles').select('full_name').eq('id', buyerId).maybeSingle();
+      const buyerName = (profile as { full_name: string | null } | null)?.full_name ?? 'there';
+      await sendEmail({
+        to: buyerEmail,
+        subject: 'Offer update',
+        html: offerRejectedEmail(buyerName, address),
+      });
+    }
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json(

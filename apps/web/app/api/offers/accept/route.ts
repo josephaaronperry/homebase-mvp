@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service';
 import { createNotification } from '@/lib/notifications';
+import { sendEmail } from '@/lib/email';
+import { offerAcceptedEmail, offerReceivedEmail } from '@/lib/email-templates';
 
 export async function POST(request: NextRequest) {
   try {
@@ -97,6 +99,31 @@ export async function POST(request: NextRequest) {
       `Your offer of ${formattedAmount} on ${address} was accepted. Select your lender to continue.`,
       `/dashboard/lenders?propertyId=${propertyId}`
     );
+
+    const [buyerAuth, sellerAuth] = await Promise.all([
+      admin.auth.admin.getUserById(buyerId),
+      admin.auth.admin.getUserById(user.id),
+    ]);
+    const buyerEmail = buyerAuth.data?.user?.email;
+    const sellerEmail = sellerAuth.data?.user?.email;
+    const { data: profiles } = await admin.from('profiles').select('id, full_name').in('id', [buyerId, user.id]);
+    const profileMap = new Map((profiles ?? []).map((p: { id: string; full_name: string | null }) => [p.id, p.full_name ?? 'there']));
+    const buyerName = profileMap.get(buyerId) ?? 'there';
+    const sellerName = profileMap.get(user.id) ?? 'there';
+    if (buyerEmail) {
+      await sendEmail({
+        to: buyerEmail,
+        subject: 'Your offer was accepted! 🎉',
+        html: offerAcceptedEmail(buyerName, address, formattedAmount, propertyId),
+      });
+    }
+    if (sellerEmail) {
+      await sendEmail({
+        to: sellerEmail,
+        subject: 'Offer accepted – summary',
+        html: offerReceivedEmail(sellerName, address, formattedAmount, buyerName),
+      });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

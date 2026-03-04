@@ -110,6 +110,13 @@ export default function LendersPage() {
         }),
       });
     } catch {}
+    try {
+      await fetch('/api/lender/select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lenderSelectionId: (selData as { id: string }).id }),
+      });
+    } catch {}
     setSelecting(null);
     router.replace(propertyId ? `/dashboard/buying/${propertyId}` : '/dashboard');
   }, [pipeline, preApproval, propertyId, propertyAddress, router]);

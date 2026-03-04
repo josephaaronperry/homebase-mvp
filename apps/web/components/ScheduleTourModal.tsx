@@ -103,6 +103,15 @@ export function ScheduleTourModal({
         return;
       }
       const inserted = data as { id: string; scheduled_at: string; tour_type: string };
+      try {
+        await fetch('/api/showings/send-tour-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ showingId: inserted.id }),
+        });
+      } catch {
+        // email is best-effort
+      }
       onClose();
       router.push(`/showings/${inserted.id}/confirmed`);
     },
