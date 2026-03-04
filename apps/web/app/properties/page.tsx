@@ -22,7 +22,7 @@ type Property = {
   bathrooms: number | null;
   sqft: number | null;
   image_url: string | null;
-  property_type: string | null;
+  propertyType: string | null;
 };
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -88,7 +88,7 @@ export default function PropertiesPage() {
 
   const buildQuery = useMemo(() => {
     return () => {
-      const select = 'id, title, address, city, state, price, bedrooms, bathrooms, sqft, image_url, property_type';
+      const select = 'id, title, address, city, state, price, bedrooms, bathrooms, sqft, image_url, propertyType';
       let q = supabase
         .from('properties')
         .select(select, { count: 'exact' })
@@ -96,13 +96,13 @@ export default function PropertiesPage() {
       const searchTerm = debouncedSearch.replace(/%/g, '\\%');
       if (searchTerm.length > 0) {
         q = q.or(
-          `address.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,zip_code.ilike.%${searchTerm}%`
+          `address.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,zipCode.ilike.%${searchTerm}%`
         );
       }
       q = q.gte('price', minPrice).lte('price', maxPrice);
       if (beds != null) q = q.gte('bedrooms', beds);
       if (baths != null) q = q.gte('bathrooms', baths);
-      if (types.length > 0) q = q.in('property_type', types);
+      if (types.length > 0) q = q.in('propertyType', types);
       return q;
     };
   }, [debouncedSearch, minPrice, maxPrice, beds, baths, types]);
