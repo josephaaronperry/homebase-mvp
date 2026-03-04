@@ -43,10 +43,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>
+      <body className="flex min-h-screen flex-col">
         <ToastProvider>
           <Navbar />
-          <main className="min-h-screen">{children}</main>
+          <main className="flex-1">{children}</main>
           <Footer />
         </ToastProvider>
       </body>

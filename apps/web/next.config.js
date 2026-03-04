@@ -2,6 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   images: {
+    domains: ['images.unsplash.com'],
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
       // Add your Supabase project: { protocol: 'https', hostname: 'YOUR_PROJECT.supabase.co', pathname: '/storage/v1/**' },

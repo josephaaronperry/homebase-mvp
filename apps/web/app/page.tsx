@@ -16,19 +16,18 @@ type Property = {
   bathrooms: number | null;
   sqft: number | null;
   imageUrl: string | null;
-  image_url?: string | null;
   images?: string[] | null;
   featured?: boolean;
 };
 
 function getDisplayImage(p: Property): string | null {
-  return p.imageUrl ?? p.image_url ?? (Array.isArray(p.images) ? p.images[0] ?? null : null);
+  return p.imageUrl ?? (Array.isArray(p.images) ? p.images[0] ?? null : null);
 }
 
 async function getNewestActiveProperties(): Promise<Property[]> {
   const { data: featuredProperties } = await supabase
     .from('properties')
-    .select('id, title, address, city, state, price, bedrooms, bathrooms, sqft, imageUrl, image_url, images, featured')
+    .select('id, title, address, city, state, price, bedrooms, bathrooms, sqft, imageUrl, images, featured')
     .eq('status', 'ACTIVE')
     .order('createdAt', { ascending: false })
     .limit(4);
@@ -255,26 +254,41 @@ export default async function HomePage() {
             Homes for sale right now
           </h2>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredGrid.map((property) => (
-              <PropertyCard
-                key={property.id}
-                id={property.id}
-                title={property.title}
-                address={property.address}
-                city={property.city}
-                state={property.state}
-                price={property.price}
-                beds={property.bedrooms}
-                baths={property.bathrooms}
-                sqft={property.sqft}
-                imageUrl={getDisplayImage(property)}
-                href={`/properties/${property.id}`}
-                featured={property.featured ?? false}
-              />
-            ))}
+            {featuredGrid.length > 0
+              ? featuredGrid.map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    id={property.id}
+                    title={property.title}
+                    address={property.address}
+                    city={property.city}
+                    state={property.state}
+                    price={property.price}
+                    beds={property.bedrooms}
+                    baths={property.bathrooms}
+                    sqft={property.sqft}
+                    imageUrl={getDisplayImage(property)}
+                    href={`/properties/${property.id}`}
+                    featured={property.featured ?? false}
+                  />
+                ))
+              : Array.from({ length: 4 }, (_, i) => (
+                  <div
+                    key={`skeleton-${i}`}
+                    className="flex h-full min-h-[320px] flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-[var(--shadow-card)]"
+                  >
+                    <div className="aspect-video w-full animate-pulse bg-warm-subtle" />
+                    <div className="flex flex-1 flex-col p-4">
+                      <div className="h-7 w-24 animate-pulse rounded bg-warm-subtle" />
+                      <div className="mt-2 h-4 w-32 animate-pulse rounded bg-warm-subtle" />
+                      <div className="mt-1 h-3 w-28 animate-pulse rounded bg-warm-subtle" />
+                      <div className="mt-4 h-10 w-full animate-pulse rounded-lg bg-warm-subtle" />
+                    </div>
+                  </div>
+                ))}
           </div>
           {featuredGrid.length === 0 && (
-            <p className="font-body text-[var(--color-text-muted)]">
+            <p className="mt-4 font-body text-[var(--color-text-muted)]">
               No listings yet. Check back soon.
             </p>
           )}
