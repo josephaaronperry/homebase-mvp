@@ -16,18 +16,19 @@ type Property = {
   bathrooms: number | null;
   sqft: number | null;
   imageUrl: string | null;
+  image_url?: string | null;
   images?: string[] | null;
   featured?: boolean;
 };
 
 function getDisplayImage(p: Property): string | null {
-  return p.imageUrl ?? (Array.isArray(p.images) ? p.images[0] ?? null : null);
+  return p.image_url ?? p.imageUrl ?? p.images?.[0] ?? null;
 }
 
 async function getNewestActiveProperties(): Promise<Property[]> {
   const { data: featuredProperties } = await supabase
     .from('properties')
-    .select('id, title, address, city, state, price, bedrooms, bathrooms, sqft, imageUrl, images, featured')
+    .select('id, title, address, city, state, price, bedrooms, bathrooms, sqft, imageUrl, image_url, images, featured')
     .eq('status', 'ACTIVE')
     .order('createdAt', { ascending: false })
     .limit(4);
