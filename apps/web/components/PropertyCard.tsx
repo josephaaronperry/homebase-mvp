@@ -12,21 +12,14 @@ type Props = {
   beds: number | null;
   baths: number | null;
   sqft: number | null;
-  imageUrl: string | null;
+  imageUrl?: string | null;
+  image_url?: string | null;
   href: string;
   showSave?: boolean;
   saved?: boolean;
   onSaveClick?: (e: React.MouseEvent) => void;
   featured?: boolean;
 };
-
-function HouseIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-    </svg>
-  );
-}
 
 export function PropertyCard({
   title,
@@ -38,6 +31,7 @@ export function PropertyCard({
   baths,
   sqft,
   imageUrl,
+  image_url,
   href,
   showSave,
   saved,
@@ -48,9 +42,7 @@ export function PropertyCard({
     ? `$${Number(price).toLocaleString()}`
     : 'Price on request';
 
-  const img =
-    imageUrl ??
-    'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=900&q=80';
+  const imgSrc = image_url ?? imageUrl ?? null;
 
   return (
     <Link
@@ -59,18 +51,11 @@ export function PropertyCard({
     >
       {/* Image: 16:9 */}
       <div className="relative aspect-video w-full overflow-hidden bg-warm-subtle">
-        {imageUrl ? (
+        {imgSrc ? (
           /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={img}
-            alt={title ?? ''}
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-            loading="lazy"
-          />
+          <img src={imgSrc} alt={address ?? title ?? ''} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-warm-subtle to-[var(--color-border)]">
-            <HouseIcon className="h-12 w-12 text-[var(--color-text-muted)]" />
-          </div>
+          <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #c8e6c9, #a5d6a7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>🏡</div>
         )}
         {featured && (
           <span className="absolute left-3 top-3 rounded-full bg-[var(--color-brand-primary)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-text-inverse)]">

@@ -32,6 +32,8 @@ async function getNewestActiveProperties(): Promise<Property[]> {
     .eq('status', 'ACTIVE')
     .order('createdAt', { ascending: false })
     .limit(4);
+  // eslint-disable-next-line no-console
+  console.log('[Homepage] featuredProperties:', JSON.stringify(featuredProperties?.map((p: Property) => ({ id: p.id, address: p.address, image: p.image_url }))));
   return (featuredProperties ?? []) as Property[];
 }
 
@@ -173,24 +175,28 @@ export default async function HomePage() {
                 heroPhotos.map((p, i) => (
                   <div
                     key={p.id}
-                    className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-[var(--shadow-card-hover)]"
                     style={{
+                      position: 'relative',
                       width: i === 0 ? 200 : 160,
                       marginTop: i === 0 ? 0 : i * 24,
                       zIndex: 3 - i,
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      background: '#d4edda',
                     }}
                   >
-                    <div className="relative aspect-[4/3] w-full overflow-hidden">
-                      {(() => {
-                        const imgSrc = getDisplayImage(p);
-                        return imgSrc ? (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={imgSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                        ) : (
-                          <div className="absolute inset-0 h-full w-full bg-warm-subtle" />
-                        );
-                      })()}
-                    </div>
+                    {getDisplayImage(p) ? (
+                      <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={getDisplayImage(p)!}
+                          alt={p.address ?? ''}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ width: '100%', aspectRatio: '4/3', background: '#c8e6c9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏡</div>
+                    )}
                     <div className="p-3 font-body text-sm font-medium text-[var(--color-text-primary)]">
                       {p.price != null ? `$${Number(p.price).toLocaleString()}` : '—'} · {p.city ?? ''}{p.city && p.state ? ', ' : ''}{p.state ?? ''}
                     </div>
@@ -271,6 +277,7 @@ export default async function HomePage() {
                         baths={property.bathrooms}
                         sqft={property.sqft}
                         imageUrl={getDisplayImage(property)}
+                        image_url={property.image_url}
                         href={`/properties/${property.id}`}
                         featured={property.featured ?? false}
                       />
