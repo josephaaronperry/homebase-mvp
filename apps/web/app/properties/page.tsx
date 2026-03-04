@@ -92,7 +92,8 @@ export default function PropertiesPage() {
       let q = supabase
         .from('properties')
         .select(select, { count: 'exact' })
-        .order('createdAt', { ascending: false });
+        .eq('status', 'ACTIVE')
+        .order('created_at', { ascending: false });
       const searchTerm = debouncedSearch.replace(/%/g, '\\%');
       if (searchTerm.length > 0) {
         q = q.or(

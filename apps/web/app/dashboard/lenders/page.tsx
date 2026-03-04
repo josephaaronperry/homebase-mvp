@@ -7,22 +7,21 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 
 const supabase = getSupabaseClient();
 
-const MOCK_LENDERS = [
-  { id: 'lender-1', name: 'HomeTrust Mortgage', loanType: '30-Year Fixed', rate: 6.75 },
-  { id: 'lender-2', name: 'Prime Lending Co', loanType: '30-Year Fixed', rate: 6.99 },
-  { id: 'lender-3', name: 'QuickClose Finance', loanType: '15-Year Fixed', rate: 6.25 },
-  { id: 'lender-4', name: 'Nationwide Home Loans', loanType: '30-Year Fixed', rate: 7.12 },
-];
+type LenderRow = {
+  id: string;
+  name: string;
+  loan_type: string;
+  apr: number;
+  monthly_payment_per_100k: number | null;
+};
 
-function monthlyPayment(principal: number, annualRate: number, years: number): number {
-  const r = annualRate / 100 / 12;
-  const n = years * 12;
-  if (r === 0) return principal / n;
-  return (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+function estMonthlyFromPer100k(loanAmount: number, monthlyPer100k: number): number {
+  return Math.round((monthlyPer100k / 100_000) * loanAmount);
 }
 
 type PreApproval = { estimated_min: number | null; estimated_max: number | null };
 type Pipeline = { id: string; property_id: string };
+type DealPrice = { agreed_price: number | null };
 
 export default function LendersPage() {
   const router = useRouter();
@@ -34,6 +33,8 @@ export default function LendersPage() {
   const [preApproval, setPreApproval] = useState<PreApproval | null>(null);
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
   const [propertyAddress, setPropertyAddress] = useState<string | null>(null);
+  const [lenders, setLenders] = useState<LenderRow[]>([]);
+  const [agreedPrice, setAgreedPrice] = useState<number | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -43,37 +44,42 @@ export default function LendersPage() {
         return;
       }
       setError(null);
+      const [lendersRes, preRes, pipeRes, propRes, dealRes] = await Promise.all([
+        supabase.from('lenders').select('id, name, loan_type, apr, monthly_payment_per_100k').eq('active', true),
+        propertyId ? supabase.from('pre_approvals').select('estimated_min, estimated_max').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
+        propertyId ? supabase.from('buying_pipelines').select('id, property_id').eq('user_id', user.id).eq('property_id', propertyId).maybeSingle() : Promise.resolve({ data: null }),
+        propertyId ? supabase.from('properties').select('address').eq('id', propertyId).maybeSingle() : Promise.resolve({ data: null }),
+        propertyId ? supabase.from('deals').select('agreed_price').eq('property_id', propertyId).eq('buyer_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
+      ]);
+      if (lendersRes.error) setError(lendersRes.error.message ?? 'Failed to load lenders');
+      else setLenders((lendersRes.data ?? []) as LenderRow[]);
       if (propertyId) {
-        const [preRes, pipeRes, propRes] = await Promise.all([
-          supabase.from('pre_approvals').select('estimated_min, estimated_max').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
-          supabase.from('buying_pipelines').select('id, property_id').eq('user_id', user.id).eq('property_id', propertyId).maybeSingle(),
-          supabase.from('properties').select('address').eq('id', propertyId).maybeSingle(),
-        ]);
         if (pipeRes.error || propRes.error) setError(pipeRes.error?.message ?? propRes.error?.message ?? 'Failed to load');
-        else {
-          setPreApproval((preRes.data ?? null) as PreApproval | null);
-          setPipeline((pipeRes.data ?? null) as Pipeline | null);
-          setPropertyAddress((propRes.data as { address: string } | null)?.address ?? null);
-        }
+        setPreApproval((preRes.data ?? null) as PreApproval | null);
+        setPipeline((pipeRes.data ?? null) as Pipeline | null);
+        setPropertyAddress((propRes.data as { address: string } | null)?.address ?? null);
+        const deal = (dealRes.data ?? null) as DealPrice | null;
+        setAgreedPrice(deal?.agreed_price ?? null);
       }
       setLoading(false);
     };
     load();
   }, [propertyId, router]);
 
-  const handleSelectLender = useCallback(async (lender: (typeof MOCK_LENDERS)[number]) => {
+  const loanAmount = agreedPrice != null ? agreedPrice * 0.8 : (preApproval?.estimated_max ?? preApproval?.estimated_min ?? 400000) * 0.8;
+
+  const handleSelectLender = useCallback(async (lender: LenderRow) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !pipeline) return;
     setSelecting(lender.id);
-    const loanAmount = (preApproval?.estimated_max ?? preApproval?.estimated_min ?? 400000) * 0.8;
-    const years = lender.loanType.startsWith('15') ? 15 : 30;
-    const estMonthly = Math.round(monthlyPayment(loanAmount, lender.rate, years));
+    const per100k = lender.monthly_payment_per_100k ?? 650;
+    const estMonthly = estMonthlyFromPer100k(loanAmount, per100k);
     const { data: selData, error: selError } = await supabase.from('lender_selections').insert({
       user_id: user.id,
-      buying_pipeline_id: pipeline.id,
+      pipeline_id: pipeline.id,
       lender_name: lender.name,
-      lender_loan_type: lender.loanType,
-      interest_rate: lender.rate,
+      loan_type: lender.loan_type,
+      rate: lender.apr,
       estimated_monthly_payment: estMonthly,
     }).select('id').single();
     if (selError) {
@@ -119,7 +125,7 @@ export default function LendersPage() {
     } catch {}
     setSelecting(null);
     router.replace(propertyId ? `/dashboard/buying/${propertyId}` : '/dashboard');
-  }, [pipeline, preApproval, propertyId, propertyAddress, router]);
+  }, [pipeline, propertyId, propertyAddress, loanAmount, router]);
 
   if (loading) {
     return (
@@ -139,8 +145,6 @@ export default function LendersPage() {
       </div>
     );
   }
-
-  const loanAmount = (preApproval?.estimated_max ?? preApproval?.estimated_min ?? 400000) * 0.8;
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
@@ -167,9 +171,12 @@ export default function LendersPage() {
         )}
 
         <div className="mt-8 space-y-4">
-          {MOCK_LENDERS.map((lender) => {
-            const years = lender.loanType.startsWith('15') ? 15 : 30;
-            const estMonthly = Math.round(monthlyPayment(loanAmount, lender.rate, years));
+          {lenders.length === 0 && !loading && (
+            <p className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 text-center text-slate-400">No lenders available. Contact support.</p>
+          )}
+          {lenders.map((lender) => {
+            const per100k = lender.monthly_payment_per_100k ?? 650;
+            const estMonthly = estMonthlyFromPer100k(loanAmount, per100k);
             return (
               <div key={lender.id} className="rounded-2xl border border-slate-800 bg-slate-950/80 p-5">
                 <div className="flex items-start gap-4">
@@ -178,9 +185,9 @@ export default function LendersPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <h2 className="font-semibold text-slate-50">{lender.name}</h2>
-                    <p className="text-sm text-slate-400">{lender.loanType}</p>
+                    <p className="text-sm text-slate-400">{lender.loan_type}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
-                      <span className="font-semibold text-emerald-400">{lender.rate}% APR</span>
+                      <span className="font-semibold text-emerald-400">{lender.apr}% APR</span>
                       <span className="text-slate-400">Est. payment: <span className="text-slate-200">${estMonthly.toLocaleString()}/mo</span></span>
                     </div>
                     <button

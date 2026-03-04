@@ -20,6 +20,25 @@ type Listing = {
 type OfferCounts = Record<string, number>;
 type ShowingCounts = Record<string, number>;
 type DealPropertyIds = Set<string>;
+type DealInfo = { dealId: string; currentStage: string };
+type DealByProperty = Record<string, DealInfo>;
+
+const SELLER_PIPELINE_STAGES = [
+  { id: 'offer_accepted', label: 'Offer Accepted' },
+  { id: 'lender_selected', label: 'Lender Selected' },
+  { id: 'inspection', label: 'Inspection & Appraisal' },
+  { id: 'loan_processing', label: 'Loan Processing' },
+  { id: 'closing', label: 'Closing' },
+];
+
+function sellerStageIndex(currentStage: string): number {
+  if (['pre_approval', 'offer_submitted', 'offer_accepted'].includes(currentStage)) return 0;
+  if (['lender_selection', 'lender_selected'].includes(currentStage)) return 1;
+  if (['inspection_booked', 'appraisal'].includes(currentStage)) return 2;
+  if (currentStage === 'loan_processing') return 3;
+  if (['clear_to_close', 'closing'].includes(currentStage)) return 4;
+  return 0;
+}
 
 function statusLabel(s: string): string {
   if (s === 'pending_review') return 'Pending Review';
@@ -43,6 +62,7 @@ export default function SellDashboardPage() {
   const [offerCounts, setOfferCounts] = useState<OfferCounts>({});
   const [showingCounts, setShowingCounts] = useState<ShowingCounts>({});
   const [dealPropertyIds, setDealPropertyIds] = useState<DealPropertyIds>(new Set());
+  const [dealByProperty, setDealByProperty] = useState<DealByProperty>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +78,7 @@ export default function SellDashboardPage() {
         supabase.from('seller_listings').select('id, property_id, status').eq('user_id', user.id).order('created_at', { ascending: false }),
         fetch('/api/sell/offers/counts').then((r) => r.ok ? r.json() : { counts: {} }),
         fetch('/api/sell/showings/counts').then((r) => r.ok ? r.json() : { counts: {} }),
-        supabase.from('deals').select('property_id').eq('seller_id', user.id),
+        supabase.from('deals').select('id, property_id, buyer_id').eq('seller_id', user.id).eq('status', 'active'),
       ]);
       const { data: rows, error: listErr } = listRes;
       if (listErr) {
@@ -68,8 +88,24 @@ export default function SellDashboardPage() {
       }
       if (countsRes?.counts) setOfferCounts(countsRes.counts as OfferCounts);
       if (showingsCountsRes?.counts) setShowingCounts(showingsCountsRes.counts as ShowingCounts);
-      const dealIds = new Set((dealsRes.data ?? []).map((d: { property_id: string }) => d.property_id));
+      const dealList = (dealsRes.data ?? []) as { id: string; property_id: string; buyer_id: string }[];
+      const dealIds = new Set(dealList.map((d) => d.property_id));
       setDealPropertyIds(dealIds);
+      if (dealList.length > 0) {
+        const pipelinePairs = dealList.map((d) => ({ user_id: d.buyer_id, property_id: d.property_id }));
+        const { data: pipes } = await supabase.from('buying_pipelines').select('user_id, property_id, current_stage');
+        const pipeMap = new Map<string, string>();
+        (pipes ?? []).forEach((p: { user_id: string; property_id: string; current_stage: string }) => {
+          pipeMap.set(`${p.user_id}:${p.property_id}`, p.current_stage);
+        });
+        const byProp: DealByProperty = {};
+        dealList.forEach((d) => {
+          byProp[d.property_id] = { dealId: d.id, currentStage: pipeMap.get(`${d.buyer_id}:${d.property_id}`) ?? 'offer_accepted' };
+        });
+        setDealByProperty(byProp);
+      } else {
+        setDealByProperty({});
+      }
       if (rows && rows.length > 0) {
         const ids = rows.map((r: { property_id: string }) => r.property_id);
         const { data: props, error: propErr } = await supabase.from('properties').select('id, address, city, state, price').in('id', ids);
@@ -141,6 +177,29 @@ export default function SellDashboardPage() {
                       </span>
                     )}
                   </div>
+                  {dealPropertyIds.has(l.property_id) && dealByProperty[l.property_id] && (
+                    <div className="mt-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Under contract</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {SELLER_PIPELINE_STAGES.map((stage, idx) => {
+                          const activeIdx = sellerStageIndex(dealByProperty[l.property_id].currentStage);
+                          const isActive = idx === activeIdx;
+                          const isComplete = idx < activeIdx;
+                          return (
+                            <span
+                              key={stage.id}
+                              className={`rounded-lg px-2 py-1 text-[11px] font-medium ${isActive ? 'bg-emerald-500/20 text-emerald-300' : isComplete ? 'bg-slate-700/60 text-slate-400' : 'bg-slate-800/80 text-slate-500'}`}
+                            >
+                              {stage.label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                      <Link href={`/sell/pipeline/${dealByProperty[l.property_id].dealId}`} className="mt-2 inline-block text-xs font-semibold text-emerald-400 hover:text-emerald-300">
+                        View full deal details →
+                      </Link>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <Link href={`/sell/offers/${l.property_id}`} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">

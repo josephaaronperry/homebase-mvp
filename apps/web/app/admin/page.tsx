@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { PIPELINE_STAGES } from '@/lib/pipeline-stages';
 
 const supabase = getSupabaseClient();
 
 const ADMIN_EMAILS = ['admin@homebase.com', 'admin@example.com'];
 
-type Tab = 'properties' | 'users' | 'offers' | 'kyc';
+type Tab = 'properties' | 'users' | 'offers' | 'kyc' | 'deals';
 
 type PropertyRow = {
   id: string;
@@ -48,6 +49,22 @@ type KycRow = {
   user_email: string | null;
 };
 
+type DealRow = {
+  id: string;
+  property_id: string;
+  buyer_id: string;
+  seller_id: string;
+  agreed_price: number | null;
+  status: string;
+  lender_id: string | null;
+  created_at: string | null;
+  property_address: string | null;
+  buyer_email: string | null;
+  seller_email: string | null;
+  lender_name: string | null;
+  pipeline_stage: string | null;
+};
+
 export default function AdminPage() {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
@@ -58,6 +75,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [offers, setOffers] = useState<OfferRow[]>([]);
   const [kyc, setKyc] = useState<KycRow[]>([]);
+  const [deals, setDeals] = useState<DealRow[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -106,6 +124,37 @@ export default function AdminPage() {
           (kp ?? []).forEach((p: { id: string; email: string | null }) => { kycProfileMap.set(p.id, p.email ?? ''); });
         }
         setKyc(kycList.map((k) => ({ ...k, user_email: kycProfileMap.get(k.user_id) ?? null })));
+
+        const dealsRes = await supabase.from('deals').select('id, property_id, buyer_id, seller_id, agreed_price, status, lender_id, created_at').order('created_at', { ascending: false });
+        if (dealsRes.error) throw dealsRes.error;
+        const dealList = (dealsRes.data ?? []) as DealRow[];
+        if (dealList.length > 0) {
+          const propIds = [...new Set(dealList.map((d) => d.property_id))];
+          const buyerSellerIds = [...new Set([...dealList.map((d) => d.buyer_id), ...dealList.map((d) => d.seller_id)])];
+          const lenderIds = dealList.map((d) => d.lender_id).filter(Boolean) as string[];
+          const [propData, profileData, lenderData, pipelineData] = await Promise.all([
+            supabase.from('properties').select('id, address').in('id', propIds),
+            supabase.from('profiles').select('id, email').in('id', buyerSellerIds),
+            lenderIds.length > 0 ? supabase.from('lender_selections').select('id, lender_name').in('id', lenderIds) : Promise.resolve({ data: [] }),
+            supabase.from('buying_pipelines').select('user_id, property_id, current_stage').in('property_id', propIds),
+          ]);
+          const propMap = new Map((propData.data ?? []).map((p: { id: string; address: string | null }) => [p.id, p.address]));
+          const profileMap = new Map((profileData.data ?? []).map((p: { id: string; email: string | null }) => [p.id, p.email ?? '']));
+          const lenderMap = new Map((lenderData.data ?? []).map((l: { id: string; lender_name: string | null }) => [l.id, l.lender_name ?? '']));
+          const pipelineMap = new Map((pipelineData.data ?? []).map((p: { user_id: string; property_id: string; current_stage: string }) => [`${p.user_id}:${p.property_id}`, p.current_stage]));
+          setDeals(
+            dealList.map((d) => ({
+              ...d,
+              property_address: propMap.get(d.property_id) ?? null,
+              buyer_email: profileMap.get(d.buyer_id) ?? null,
+              seller_email: profileMap.get(d.seller_id) ?? null,
+              lender_name: d.lender_id ? lenderMap.get(d.lender_id) ?? null : null,
+              pipeline_stage: pipelineMap.get(`${d.buyer_id}:${d.property_id}`) ?? null,
+            }))
+          );
+        } else {
+          setDeals([]);
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load data');
       } finally {
@@ -118,6 +167,20 @@ export default function AdminPage() {
   const setPropertyStatus = async (id: string, status: string) => {
     const { error: err } = await supabase.from('properties').update({ status }).eq('id', id);
     if (!err) setProperties((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+  };
+
+  const setDealStatus = async (dealId: string, status: string) => {
+    const { error: err } = await supabase.from('deals').update({ status, updated_at: new Date().toISOString() }).eq('id', dealId);
+    if (!err) setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, status } : d)));
+  };
+
+  const setDealPipelineStage = async (dealId: string, buyerId: string, propertyId: string, stage: string) => {
+    const { data: pipes } = await supabase.from('buying_pipelines').select('id').eq('user_id', buyerId).eq('property_id', propertyId);
+    const pipe = (pipes ?? [])[0] as { id: string } | undefined;
+    if (pipe) {
+      await supabase.from('buying_pipelines').update({ current_stage: stage, updated_at: new Date().toISOString() }).eq('id', pipe.id);
+      setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, pipeline_stage: stage } : d)));
+    }
   };
 
   const updateKyc = async (id: string, status: 'APPROVED' | 'REJECTED', userId: string) => {
@@ -155,6 +218,7 @@ export default function AdminPage() {
     { id: 'users', label: 'Users' },
     { id: 'offers', label: 'Offers' },
     { id: 'kyc', label: 'KYC Submissions' },
+    { id: 'deals', label: 'Deals' },
   ];
 
   return (
@@ -268,6 +332,66 @@ export default function AdminPage() {
                   )}
                 </div>
               ))
+            )}
+          </div>
+        )}
+
+        {activeTab === 'deals' && (
+          <div className="mt-6 overflow-x-auto">
+            {deals.length === 0 ? (
+              <p className="rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center text-slate-400">No deals.</p>
+            ) : (
+              <table className="w-full min-w-[800px] border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-700 text-slate-400">
+                    <th className="py-2 pr-2 font-semibold">Deal ID</th>
+                    <th className="py-2 pr-2 font-semibold">Property</th>
+                    <th className="py-2 pr-2 font-semibold">Buyer</th>
+                    <th className="py-2 pr-2 font-semibold">Seller</th>
+                    <th className="py-2 pr-2 font-semibold">Agreed price</th>
+                    <th className="py-2 pr-2 font-semibold">Status</th>
+                    <th className="py-2 pr-2 font-semibold">Lender</th>
+                    <th className="py-2 pr-2 font-semibold">Pipeline stage</th>
+                    <th className="py-2 pr-2 font-semibold">Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deals.map((d) => (
+                    <tr key={d.id} className="border-b border-slate-800/80">
+                      <td className="py-2 pr-2 font-mono text-xs text-slate-300">{d.id.slice(0, 8)}</td>
+                      <td className="py-2 pr-2 text-slate-200">{d.property_address ?? '—'}</td>
+                      <td className="py-2 pr-2 text-slate-300">{d.buyer_email ?? '—'}</td>
+                      <td className="py-2 pr-2 text-slate-300">{d.seller_email ?? '—'}</td>
+                      <td className="py-2 pr-2 text-slate-200">{d.agreed_price != null ? `$${d.agreed_price.toLocaleString()}` : '—'}</td>
+                      <td className="py-2 pr-2">
+                        <select
+                          value={d.status}
+                          onChange={(e) => setDealStatus(d.id, e.target.value)}
+                          className={`rounded-lg border px-2 py-1 text-xs font-semibold bg-slate-900 text-slate-100 border-slate-700 ${d.status === 'active' ? 'text-emerald-300' : d.status === 'closed' ? 'text-blue-300' : 'text-rose-300'}`}
+                        >
+                          <option value="active">Active</option>
+                          <option value="closed">Closed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </td>
+                      <td className="py-2 pr-2 text-slate-300">{d.lender_name ?? 'Pending'}</td>
+                      <td className="py-2 pr-2">
+                        <select
+                          value={d.pipeline_stage ?? ''}
+                          onChange={(e) => setDealPipelineStage(d.id, d.buyer_id, d.property_id, e.target.value)}
+                          className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200"
+                        >
+                          <option value="">—</option>
+                          {PIPELINE_STAGES.map((s) => (
+                            <option key={s.id} value={s.id}>{s.label}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-2 pr-2 text-slate-500 text-xs">{d.created_at ? new Date(d.created_at).toLocaleDateString() : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         )}

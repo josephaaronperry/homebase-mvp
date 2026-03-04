@@ -89,48 +89,50 @@ export default function SellListPage() {
     setForm((f) => ({ ...f, highlights: f.highlights.filter((_, i) => i !== index) }));
   };
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   const handleSubmit = async () => {
+    setSubmitError(null);
     const { data: { user } } = await supabase.auth.getUser();
+    console.log('[Sell] Submit clicked, agreedToTerms:', form.agreed);
+    console.log('[Sell] Form data:', { ...form, photoUrls: form.photoUrls.length, highlights: form.highlights.length });
+    console.log('[Sell] User:', user?.id);
     if (!user || !form.agreed) return;
     if (form.description.length < 50) {
-      alert('Description must be at least 50 characters.');
+      setSubmitError('Description must be at least 50 characters.');
       return;
     }
     setSubmitting(true);
     const priceNum = form.price ? parseFloat(form.price.replace(/,/g, '')) : null;
     const sqftNum = form.sqft ? parseInt(form.sqft, 10) : null;
-    const yearNum = form.yearBuilt ? parseInt(form.yearBuilt, 10) : null;
-    const lotNum = form.lotSize ? parseFloat(form.lotSize) : null;
+    const propertyPayload = {
+      address: form.address,
+      city: form.city,
+      state: form.state,
+      zipCode: form.zipCode || null,
+      propertyType: form.propertyType,
+      bedrooms: form.bedrooms,
+      bathrooms: form.bathrooms,
+      sqft: sqftNum,
+      price: priceNum,
+      description: form.description.trim(),
+      status: 'ACTIVE',
+      user_id: user.id,
+    };
+    console.log('[Sell] Properties insert payload:', propertyPayload);
     const { data: prop, error: propError } = await supabase
       .from('properties')
-      .insert({
-        user_id: user.id,
-        title: form.address || 'New listing',
-        address: form.address,
-        city: form.city,
-        state: form.state,
-        zipCode: form.zipCode || null,
-        propertyType: form.propertyType,
-        bedrooms: form.bedrooms,
-        bathrooms: form.bathrooms,
-        sqft: sqftNum,
-        yearBuilt: yearNum || null,
-        lotSize: lotNum || null,
-        price: priceNum,
-        description: form.description.trim(),
-        features: form.highlights.length ? { highlights: form.highlights } : {},
-        imageUrl: form.photoUrls[0] || null,
-        images: form.photoUrls,
-        status: 'ACTIVE',
-      })
+      .insert(propertyPayload)
       .select('id')
       .single();
 
     if (propError || !prop) {
       setSubmitting(false);
-      alert(propError?.message ?? 'Failed to create listing');
+      const msg = propError?.message ?? 'Failed to create listing';
+      setSubmitError(msg);
       return;
     }
+    console.log('[Sell] Property created:', (prop as { id: string }).id);
 
     const { error: listError } = await supabase.from('seller_listings').insert({
       user_id: user.id,
@@ -139,7 +141,7 @@ export default function SellListPage() {
     });
     setSubmitting(false);
     if (listError) {
-      alert(listError.message ?? 'Failed to save listing');
+      setSubmitError(listError.message ?? 'Failed to save listing');
       return;
     }
     router.push(`/sell/success?propertyId=${(prop as { id: string }).id}`);
@@ -284,6 +286,11 @@ export default function SellListPage() {
                 <input type="checkbox" checked={form.agreed} onChange={(e) => setForm((f) => ({ ...f, agreed: e.target.checked }))} className="mt-0.5 h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500" />
                 <span className="text-xs text-slate-300">I agree to the listing terms.</span>
               </label>
+              {submitError && (
+                <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100" role="alert">
+                  {submitError}
+                </div>
+              )}
               <div className="flex gap-2">
                 <button type="button" onClick={() => setStep(4)} className="flex-1 rounded-xl border border-slate-700 py-2 text-sm font-semibold text-slate-300">Back</button>
                 <button type="button" onClick={handleSubmit} disabled={!form.agreed || submitting} className="flex-1 rounded-xl bg-emerald-500 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50">{submitting ? 'Submitting…' : 'Submit listing'}</button>

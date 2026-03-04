@@ -32,14 +32,19 @@ export default function SellSuccessPage() {
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 text-4xl text-emerald-400">
           ✓
         </div>
-        <h1 className="mt-6 text-2xl font-bold text-slate-50">Your listing is under review</h1>
+        <h1 className="mt-6 text-2xl font-bold text-slate-50">Listing submitted successfully</h1>
         {loading && <p className="mt-3 text-slate-400">Loading...</p>}
         {address && !loading && <p className="mt-3 font-medium text-emerald-300">{address}</p>}
         <p className="mt-3 text-slate-300">
           We’ll review your listing and get back to you within 1–2 business days. You’ll receive an email once it’s live.
         </p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link href="/sell/dashboard" className="rounded-xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-400">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          {propertyId && (
+            <Link href={`/properties/${propertyId}`} className="rounded-xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-400">
+              View your listing
+            </Link>
+          )}
+          <Link href="/sell/dashboard" className="rounded-xl border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-200 hover:border-emerald-500/50">
             Go to seller dashboard
           </Link>
           <Link href="/properties" className="rounded-xl border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-200 hover:border-emerald-500/50">
