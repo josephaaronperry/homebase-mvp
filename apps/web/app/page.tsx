@@ -180,14 +180,14 @@ export default async function HomePage() {
                       zIndex: 3 - i,
                     }}
                   >
-                    <div className="aspect-[4/3] w-full">
+                    <div className="relative aspect-[4/3] w-full overflow-hidden">
                       {(() => {
-                        const img = getDisplayImage(p);
-                        return img ? (
+                        const imgSrc = getDisplayImage(p);
+                        return imgSrc ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={img} alt="" className="h-full w-full object-cover" />
+                          <img src={imgSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
                         ) : (
-                          <div className="h-full w-full bg-warm-subtle" />
+                          <div className="absolute inset-0 h-full w-full bg-warm-subtle" />
                         );
                       })()}
                     </div>
@@ -256,37 +256,35 @@ export default async function HomePage() {
           </h2>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {featuredGrid.length > 0
-              ? featuredGrid.map((property) => (
-                  <PropertyCard
-                    key={property.id}
-                    id={property.id}
-                    title={property.title}
-                    address={property.address}
-                    city={property.city}
-                    state={property.state}
-                    price={property.price}
-                    beds={property.bedrooms}
-                    baths={property.bathrooms}
-                    sqft={property.sqft}
-                    imageUrl={getDisplayImage(property)}
-                    href={`/properties/${property.id}`}
-                    featured={property.featured ?? false}
-                  />
-                ))
-              : Array.from({ length: 4 }, (_, i) => (
-                  <div
-                    key={`skeleton-${i}`}
-                    className="flex h-full min-h-[320px] flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-card)] shadow-[var(--shadow-card)]"
-                  >
-                    <div className="aspect-video w-full animate-pulse bg-warm-subtle" />
-                    <div className="flex flex-1 flex-col p-4">
-                      <div className="h-7 w-24 animate-pulse rounded bg-warm-subtle" />
-                      <div className="mt-2 h-4 w-32 animate-pulse rounded bg-warm-subtle" />
-                      <div className="mt-1 h-3 w-28 animate-pulse rounded bg-warm-subtle" />
-                      <div className="mt-4 h-10 w-full animate-pulse rounded-lg bg-warm-subtle" />
-                    </div>
-                  </div>
-                ))}
+              ? featuredGrid.map((property) => {
+                  try {
+                    return (
+                      <PropertyCard
+                        key={property.id}
+                        id={property.id}
+                        title={property.title}
+                        address={property.address}
+                        city={property.city}
+                        state={property.state}
+                        price={property.price}
+                        beds={property.bedrooms}
+                        baths={property.bathrooms}
+                        sqft={property.sqft}
+                        imageUrl={getDisplayImage(property)}
+                        href={`/properties/${property.id}`}
+                        featured={property.featured ?? false}
+                      />
+                    );
+                  } catch (err) {
+                    if (typeof console !== 'undefined') console.error('[PropertyCard render error]', err);
+                    return (
+                      <div key={property.id} className="min-h-[320px] rounded-[var(--radius-lg)] border border-[var(--color-error)] bg-red-50 p-4 font-body text-sm text-[var(--color-error)]">
+                        Could not load this listing.
+                      </div>
+                    );
+                  }
+                })
+              : null}
           </div>
           {featuredGrid.length === 0 && (
             <p className="mt-4 font-body text-[var(--color-text-muted)]">
