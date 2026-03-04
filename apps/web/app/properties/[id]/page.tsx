@@ -134,9 +134,9 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               title={property.title}
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-            <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <div className="text-2xl font-semibold sm:text-3xl">
+            <div className="absolute bottom-3 left-3 right-3 flex flex-col gap-2 sm:bottom-4 sm:left-4 sm:right-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="min-w-0">
+                <div className="text-xl font-semibold sm:text-2xl md:text-3xl">
                   {fmtPrice}
                 </div>
                 <div className="mt-1 text-sm text-slate-200">{badge}</div>
@@ -151,9 +151,9 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Gallery + details */}
-          <div className="grid gap-8 border-t border-slate-900 bg-slate-950/80 p-5 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:p-6">
-            <div className="space-y-6">
+          {/* Gallery + details: main content first, sidebar below on mobile */}
+          <div className="grid gap-8 border-t border-slate-900 bg-slate-950/80 p-4 sm:p-5 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:p-6">
+            <div className="min-w-0 space-y-6">
               {/* Stats grid */}
               <div className="grid gap-4 rounded-2xl border border-slate-900 bg-slate-950/80 p-4 text-xs text-slate-200 sm:grid-cols-2">
                 <div>

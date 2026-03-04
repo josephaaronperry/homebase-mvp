@@ -48,9 +48,12 @@ export default function NotificationsPage() {
   const unreadCount = items.filter((n) => !n.read).length;
 
   const markAllRead = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     await supabase
       .from('notifications')
       .update({ read: true })
+      .eq('user_id', user.id)
       .eq('read', false);
     setItems((prev) => prev.map((n) => ({ ...n, read: true })));
   };

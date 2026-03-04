@@ -17,6 +17,8 @@ type Listing = {
   price: number | null;
 };
 
+type OfferCounts = Record<string, number>;
+
 function statusLabel(s: string): string {
   if (s === 'pending_review') return 'Pending Review';
   if (s === 'active') return 'Active';
@@ -36,6 +38,7 @@ function statusClass(s: string): string {
 export default function SellDashboardPage() {
   const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
+  const [offerCounts, setOfferCounts] = useState<OfferCounts>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,12 +50,17 @@ export default function SellDashboardPage() {
         return;
       }
       setError(null);
-      const { data: rows, error: listErr } = await supabase.from('seller_listings').select('id, property_id, status').eq('user_id', user.id).order('created_at', { ascending: false });
+      const [listRes, countsRes] = await Promise.all([
+        supabase.from('seller_listings').select('id, property_id, status').eq('user_id', user.id).order('created_at', { ascending: false }),
+        fetch('/api/sell/offers/counts').then((r) => r.ok ? r.json() : { counts: {} }),
+      ]);
+      const { data: rows, error: listErr } = listRes;
       if (listErr) {
         setError(listErr.message ?? 'Failed to load listings');
         setLoading(false);
         return;
       }
+      if (countsRes?.counts) setOfferCounts(countsRes.counts as OfferCounts);
       if (rows && rows.length > 0) {
         const ids = rows.map((r: { property_id: string }) => r.property_id);
         const { data: props, error: propErr } = await supabase.from('properties').select('id, address, city, state, price').in('id', ids);
@@ -120,7 +128,18 @@ export default function SellDashboardPage() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link href={`/sell/offers/${l.property_id}`} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">
+                    Offers
+                    {(offerCounts[l.property_id] ?? 0) > 0 && (
+                      <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                        {offerCounts[l.property_id]}
+                      </span>
+                    )}
+                  </Link>
+                  <Link href={`/sell/showings/${l.property_id}`} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">
+                    Showings
+                  </Link>
                   <Link href={`/properties/${l.property_id}`} className="text-xs font-semibold text-emerald-400 hover:text-emerald-300">
                     View listing
                   </Link>

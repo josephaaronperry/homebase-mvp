@@ -16,6 +16,7 @@ type Property = {
   city: string | null;
   state: string | null;
   price: number | null;
+  user_id?: string;
 };
 
 const CONTINGENCY_TOOLTIPS: Record<string, string> = {
@@ -71,7 +72,7 @@ export default function NewOfferPage() {
         const [propRes, preApprovalRes] = await Promise.all([
           supabase
             .from('properties')
-            .select('id, title, address, city, state, price')
+            .select('id, title, address, city, state, price, user_id')
             .eq('id', propertyId)
             .maybeSingle(),
           supabase
@@ -155,7 +156,7 @@ export default function NewOfferPage() {
       return;
     }
     const offerData = data as { id: string; price: number; status: string };
-    if (propertyId) {
+    if (propertyId && property) {
       const stageCompletedAt: Record<string, string> = { offer_submitted: new Date().toISOString() };
       await supabase.from('buying_pipelines').upsert(
         {
@@ -168,6 +169,35 @@ export default function NewOfferPage() {
         },
         { onConflict: 'user_id,property_id' }
       );
+      const address = (property as { address?: string }).address ?? 'the property';
+      if ((property as { user_id?: string }).user_id) {
+        try {
+          await fetch('/api/notifications/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: (property as { user_id: string }).user_id,
+              type: 'offer_received',
+              title: 'New offer received',
+              body: `You have a new offer on ${address}.`,
+              link: '/sell/dashboard',
+            }),
+          });
+        } catch {}
+      }
+      try {
+        await fetch('/api/notifications/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            type: 'pipeline_update',
+            title: 'Transaction update',
+            body: `Your transaction for ${address} has moved to Offer Submitted.`,
+            link: `/dashboard/buying/${propertyId}`,
+          }),
+        });
+      } catch {}
       router.replace(`/dashboard/buying/${propertyId}`);
       return;
     }

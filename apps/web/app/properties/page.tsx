@@ -46,8 +46,7 @@ export default function PropertiesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState(initialQ);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState<Property[] | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(2_000_000);
@@ -87,97 +86,65 @@ export default function PropertiesPage() {
 
   const debouncedSearch = useDebounce(searchQuery.trim(), 300);
 
+  const buildQuery = useMemo(() => {
+    return () => {
+      const select = 'id, title, address, city, state, price, bedrooms, bathrooms, sqft, image_url, property_type';
+      let q = supabase
+        .from('properties')
+        .select(select, { count: 'exact' })
+        .order('created_at', { ascending: false });
+      const searchTerm = debouncedSearch.replace(/%/g, '\\%');
+      if (searchTerm.length > 0) {
+        q = q.or(
+          `address.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,zip_code.ilike.%${searchTerm}%`
+        );
+      }
+      q = q.gte('price', minPrice).lte('price', maxPrice);
+      if (beds != null) q = q.gte('bedrooms', beds);
+      if (baths != null) q = q.gte('bathrooms', baths);
+      if (types.length > 0) q = q.in('property_type', types);
+      return q;
+    };
+  }, [debouncedSearch, minPrice, maxPrice, beds, baths, types]);
+
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       setLoading(true);
       setError(null);
-      const { data, error: fetchError } = await supabase
-        .from('properties')
-        .select(
-          'id, title, address, city, state, price, bedrooms, bathrooms, sqft, image_url, property_type',
-        )
-        .order('created_at', { ascending: false })
-        .range(0, PAGE_SIZE - 1);
-
+      const query = buildQuery().range(0, PAGE_SIZE - 1);
+      const { data, error: fetchError, count } = await query;
+      if (cancelled) return;
       if (fetchError) {
         setError(fetchError.message);
         setProperties([]);
+        setTotalCount(0);
       } else {
         setProperties((data ?? []) as Property[]);
+        setTotalCount(count ?? 0);
       }
       setHasMore((data ?? []).length === PAGE_SIZE);
       setLoading(false);
     };
-
     load();
-  }, []);
+    return () => { cancelled = true; };
+  }, [buildQuery]);
 
   const loadMore = async () => {
-    if (loadingMore || !hasMore || isSearchMode) return;
+    if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     const from = properties.length;
     const to = from + PAGE_SIZE - 1;
-    const { data } = await supabase
-      .from('properties')
-      .select(
-        'id, title, address, city, state, price, bedrooms, bathrooms, sqft, image_url, property_type',
-      )
-      .order('created_at', { ascending: false })
-      .range(from, to);
+    const query = buildQuery().range(from, to);
+    const { data } = await query;
     const list = (data ?? []) as Property[];
     setProperties((prev) => [...prev, ...list]);
     setHasMore(list.length === PAGE_SIZE);
     setLoadingMore(false);
   };
 
-  useEffect(() => {
-    if (debouncedSearch.length < 2) {
-      setSearchResults(null);
-      setSearchLoading(false);
-      return;
-    }
-
-    const search = async () => {
-      setSearchLoading(true);
-      try {
-        const res = await fetch(
-          `/api/properties/search?q=${encodeURIComponent(debouncedSearch)}`
-        );
-        const json = await res.json();
-        if (res.ok) {
-          setSearchResults(json.properties ?? []);
-        } else {
-          setSearchResults([]);
-        }
-      } catch {
-        setSearchResults([]);
-      }
-      setSearchLoading(false);
-    };
-
-    search();
-  }, [debouncedSearch]);
-
-  const displayList = useMemo(() => {
-    if (debouncedSearch.length >= 2 && searchResults !== null) {
-      return searchResults;
-    }
-    return properties;
-  }, [debouncedSearch, searchResults, properties]);
-
-  const isSearchMode = debouncedSearch.length >= 2;
-
-  const filtered = useMemo(() => {
-    return displayList.filter((p: Property) => {
-      if (p.price != null && (p.price < minPrice || p.price > maxPrice)) {
-        return false;
-      }
-      if (beds != null && (p.bedrooms ?? 0) < beds) return false;
-      if (baths != null && (p.bathrooms ?? 0) < baths) return false;
-      if (types.length > 0 && p.property_type && !types.includes(p.property_type)) return false;
-      return true;
-    });
-  }, [baths, beds, displayList, maxPrice, minPrice, types]);
+  const filtered = properties;
+  const isLoadingResults = loading;
 
   const handleToggleType = (value: string) => {
     setTypes((prev) =>
@@ -215,7 +182,6 @@ export default function PropertiesPage() {
   };
 
   const priceLabel = `${minPrice.toLocaleString()} - ${maxPrice.toLocaleString()}`;
-  const isLoadingResults = loading || (isSearchMode && searchLoading);
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
@@ -232,7 +198,7 @@ export default function PropertiesPage() {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by city, address, or keywords..."
+              placeholder="City, address, or ZIP"
               className="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/40"
             />
           </div>
@@ -359,19 +325,19 @@ export default function PropertiesPage() {
               </div>
             )}
 
-            {isLoadingResults ? (
+            {loading ? (
               <LoadingSkeleton variant="propertyList" />
             ) : filtered.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center py-16 text-slate-400">
                 <div className="mb-3 text-4xl">🔍</div>
-                <p className="text-sm">
-                  {isSearchMode
-                    ? 'No homes match your search.'
-                    : 'No homes match your filters yet.'}
-                </p>
+                <p className="text-sm">No homes match your search or filters.</p>
               </div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <>
+                <p className="mb-3 text-xs text-slate-400">
+                  {totalCount} {totalCount === 1 ? 'home' : 'homes'} found
+                </p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {filtered.map((p) => (
                   <PropertyCard
                     key={p.id}
@@ -391,9 +357,10 @@ export default function PropertiesPage() {
                     onSaveClick={(e) => handleSaveClick(e, p.id)}
                   />
                 ))}
-              </div>
+                </div>
+              </>
             )}
-            {!isSearchMode && hasMore && filtered.length >= PAGE_SIZE && (
+            {hasMore && filtered.length >= PAGE_SIZE && (
               <div className="mt-6 flex justify-center">
                 <button
                   type="button"

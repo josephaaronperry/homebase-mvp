@@ -401,7 +401,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <section className="mb-6 grid gap-6 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
           <div className="space-y-4">
             <div className="rounded-3xl border border-slate-800 bg-slate-950/80 p-5 shadow-xl shadow-black/40">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">
@@ -414,7 +414,7 @@ export default function DashboardPage() {
                 Track saved homes, upcoming showings, and stay on top of your next move.
               </p>
 
-              <div className="mt-6 grid grid-cols-2 gap-3 text-sm text-slate-200">
+              <div className="mt-6 grid grid-cols-2 gap-3 text-sm text-slate-200 min-[390px]:grid-cols-2 max-[389px]:grid-cols-1">
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">
                   <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                     Saved homes

@@ -127,6 +127,22 @@ export default function PreApprovalPage() {
         },
         { onConflict: 'user_id,property_id' }
       );
+      let address = 'your property';
+      const { data: prop } = await supabase.from('properties').select('address').eq('id', propertyId).maybeSingle();
+      if (prop?.address) address = prop.address as string;
+      try {
+        await fetch('/api/notifications/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            type: 'pipeline_update',
+            title: 'Transaction update',
+            body: `Your transaction for ${address} has moved to Pre-approval.`,
+            link: `/dashboard/buying/${propertyId}`,
+          }),
+        });
+      } catch {}
       router.replace(`/dashboard/buying/${propertyId}`);
       return;
     }

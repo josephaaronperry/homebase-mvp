@@ -66,7 +66,7 @@ export default async function HomePage() {
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-300">
               Find your dream home
             </p>
-            <h1 className="mt-4 text-balance text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
+            <h1 className="mt-4 text-balance text-3xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
               Zillow-level search,
               <span className="bg-gradient-to-r from-emerald-400 via-sky-400 to-emerald-300 bg-clip-text text-transparent">
                 {' '}

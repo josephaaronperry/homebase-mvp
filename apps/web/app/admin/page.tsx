@@ -120,9 +120,24 @@ export default function AdminPage() {
     if (!err) setProperties((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
   };
 
-  const updateKyc = async (id: string, status: 'APPROVED' | 'REJECTED') => {
+  const updateKyc = async (id: string, status: 'APPROVED' | 'REJECTED', userId: string) => {
     await supabase.from('kyc_submissions').update({ status, reviewed_at: new Date().toISOString() }).eq('id', id);
     setKyc((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    if (status === 'APPROVED' && userId) {
+      try {
+        await fetch('/api/notifications/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            type: 'kyc_approved',
+            title: 'Identity verified',
+            body: 'Your identity has been verified. You can now make offers.',
+            link: '/dashboard',
+          }),
+        });
+      } catch {}
+    }
   };
 
   if (loading) {
@@ -247,8 +262,8 @@ export default function AdminPage() {
                   </div>
                   {r.status === 'PENDING' && (
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => updateKyc(r.id, 'APPROVED')} className="rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30">Approve</button>
-                      <button type="button" onClick={() => updateKyc(r.id, 'REJECTED')} className="rounded-lg bg-rose-500/20 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/30">Reject</button>
+                      <button type="button" onClick={() => updateKyc(r.id, 'APPROVED', r.user_id)} className="rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30">Approve</button>
+                      <button type="button" onClick={() => updateKyc(r.id, 'REJECTED', r.user_id)} className="rounded-lg bg-rose-500/20 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/30">Reject</button>
                     </div>
                   )}
                 </div>

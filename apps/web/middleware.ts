@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PROTECTED_PATHS = ['/dashboard', '/saved', '/showings', '/offers', '/profile', '/notifications', '/verify', '/transaction', '/admin', '/sell/list', '/sell/dashboard'];
+const PROTECTED_PATHS = ['/dashboard', '/saved', '/showings', '/offers', '/profile', '/notifications', '/verify', '/transaction', '/admin', '/sell/list', '/sell/dashboard', '/sell/offers', '/sell/showings'];
 
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));

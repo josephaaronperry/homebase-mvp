@@ -10,6 +10,7 @@ const supabase = getSupabaseClient();
 
 type Showing = {
   id: string | number;
+  property_id?: string | null;
   property_address?: string | null;
   property_city?: string | null;
   property_state?: string | null;
@@ -34,7 +35,7 @@ export default function ShowingsPage() {
       setError(null);
       const { data, error: err } = await supabase
         .from('showings')
-        .select('id, property_address, property_city, property_state, scheduled_at, status, tour_type')
+        .select('id, property_id, property_address, property_city, property_state, scheduled_at, status, tour_type')
         .order('scheduled_at', { ascending: true });
       if (err) setError(err.message ?? 'Failed to load showings');
       else setShowings((data ?? []) as Showing[]);
@@ -45,9 +46,16 @@ export default function ShowingsPage() {
 
   const statusBadge = (status?: string | null) => {
     if (status === 'CONFIRMED') return 'bg-emerald-500/15 text-emerald-300';
-    if (status === 'PENDING') return 'bg-sky-500/15 text-sky-300';
+    if (status === 'PENDING') return 'bg-amber-500/15 text-amber-300';
     if (status === 'CANCELLED') return 'bg-rose-500/15 text-rose-300';
     return 'bg-slate-700/60 text-slate-200';
+  };
+
+  const statusLabel = (status?: string | null) => {
+    if (status === 'CONFIRMED') return 'Confirmed';
+    if (status === 'PENDING') return 'Pending';
+    if (status === 'CANCELLED') return 'Cancelled';
+    return status ?? 'Pending';
   };
 
   const fmtDate = (iso?: string | null) =>
@@ -110,7 +118,7 @@ export default function ShowingsPage() {
             {showings.map((s) => (
               <div
                 key={s.id}
-                className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3"
+                className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <div className="text-sm font-semibold text-slate-50">
@@ -128,15 +136,23 @@ export default function ShowingsPage() {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <span
                     className={
-                      'rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ' +
+                      'rounded-full px-3 py-1 text-[11px] font-semibold ' +
                       statusBadge(s.status)
                     }
                   >
-                    {s.status ?? 'SCHEDULED'}
+                    {statusLabel(s.status)}
                   </span>
+                  {s.status === 'CANCELLED' && s.property_id && (
+                    <Link
+                      href={`/properties/${s.property_id}`}
+                      className="rounded-full border border-emerald-500/60 px-3 py-1 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/10"
+                    >
+                      Reschedule
+                    </Link>
+                  )}
                   {s.status !== 'CANCELLED' && (
                     <button
                       onClick={async () => {

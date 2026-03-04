@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 const supabase = getSupabaseClient();
+
+type NavNotification = { id: string; title: string | null; body: string | null; read: boolean; link: string | null; created_at: string | null };
 
 export function Navbar() {
   const router = useRouter();
@@ -13,8 +15,31 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [sellOpen, setSellOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [user, setUser] = useState<{ id: string; email?: string; user_metadata?: { full_name?: string } } | null>(null);
   const [navSearch, setNavSearch] = useState('');
+  const [notifications, setNotifications] = useState<NavNotification[]>([]);
+
+  const fetchNotifications = useCallback(async () => {
+    const { data: { user: u } } = await supabase.auth.getUser();
+    if (!u) {
+      setNotifications([]);
+      return;
+    }
+    const { data } = await supabase
+      .from('notifications')
+      .select('id, title, body, read, link, created_at')
+      .eq('user_id', u.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    setNotifications((data ?? []) as NavNotification[]);
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   useEffect(() => {
     const get = async () => {
@@ -126,15 +151,90 @@ export function Navbar() {
           {navLinks}
           {user ? (
             <div className="relative flex items-center gap-2">
-              <button
-                type="button"
-                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-50"
-                aria-label="Notifications"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setNotifOpen((v) => !v)}
+                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-50"
+                  aria-label="Notifications"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                </button>
+                {notifications.some((n) => !n.read) && (
+                  <span className="absolute right-0 top-0 h-2 w-2 rounded-full bg-red-500 ring-2 ring-slate-950" aria-hidden />
+                )}
+              </div>
+              {notifOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} aria-hidden />
+                  <div className="absolute right-0 top-full z-50 mt-1 w-[min(20rem,90vw)] rounded-xl border border-slate-800 bg-slate-950 py-2 shadow-xl">
+                    <div className="flex items-center justify-between px-4 pb-2">
+                      <span className="text-xs font-semibold text-slate-300">Notifications</span>
+                      {notifications.some((n) => !n.read) && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const { data: { user: u } } = await supabase.auth.getUser();
+                            if (u) {
+                              await supabase.from('notifications').update({ read: true }).eq('user_id', u.id).eq('read', false);
+                              setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+                            }
+                          }}
+                          className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-[70vh] overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <p className="px-4 py-6 text-center text-xs text-slate-500">No notifications</p>
+                      ) : (
+                        notifications.map((n) => (
+                          <button
+                            key={n.id}
+                            type="button"
+                            className="flex w-full flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-slate-800/80"
+                            onClick={async () => {
+                              if (!n.read) {
+                                await supabase.from('notifications').update({ read: true }).eq('id', n.id);
+                                setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+                              }
+                              setNotifOpen(false);
+                              if (n.link) router.push(n.link);
+                            }}
+                          >
+                            <div className="flex w-full items-center justify-between gap-2">
+                              <span className="text-xs font-semibold text-slate-100">{n.title ?? 'Update'}</span>
+                              {!n.read && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />}
+                            </div>
+                            <p className="line-clamp-2 text-[11px] text-slate-400">{n.body}</p>
+                            <span className="text-[10px] text-slate-500">
+                              {n.created_at ? (() => {
+                                const d = new Date(n.created_at);
+                                const s = Math.round((Date.now() - d.getTime()) / 1000);
+                                if (s < 60) return 'Just now';
+                                if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+                                if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+                                return `${Math.floor(s / 86400)}d ago`;
+                              })() : ''}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                    <Link
+                      href="/notifications"
+                      className="block border-t border-slate-800 px-4 py-2 text-center text-xs font-medium text-emerald-400 hover:bg-slate-800/80"
+                      onClick={() => setNotifOpen(false)}
+                    >
+                      View all
+                    </Link>
+                  </div>
+                </>
+              )}
               <button
                 type="button"
                 onClick={() => setUserOpen((v) => !v)}
@@ -241,6 +341,9 @@ export function Navbar() {
               <>
                 <Link href="/dashboard" className="rounded-lg px-3 py-2 hover:bg-slate-800 hover:text-slate-50" onClick={() => setOpen(false)}>
                   Dashboard
+                </Link>
+                <Link href="/notifications" className="rounded-lg px-3 py-2 hover:bg-slate-800 hover:text-slate-50" onClick={() => setOpen(false)}>
+                  Notifications
                 </Link>
                 <button type="button" onClick={handleSignOut} className="rounded-lg px-3 py-2 text-left text-slate-400 hover:bg-slate-800 hover:text-slate-50">
                   Sign out

@@ -109,9 +109,23 @@ export default function InspectionsPage() {
         updated_at: new Date().toISOString(),
       })
       .eq('id', pipeline.id);
+    const address = propertyAddress ?? 'your property';
+    try {
+      await fetch('/api/notifications/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          type: 'pipeline_update',
+          title: 'Transaction update',
+          body: `Your transaction for ${address} has moved to Inspection Booked.`,
+          link: propertyId ? `/dashboard/buying/${propertyId}` : '/dashboard',
+        }),
+      });
+    } catch {}
     setSubmitting(false);
     router.replace(propertyId ? `/dashboard/buying/${propertyId}` : '/dashboard');
-  }, [pipeline, selectedDate, selectedSlot, selectedInspector, propertyId, router]);
+  }, [pipeline, selectedDate, selectedSlot, selectedInspector, propertyId, propertyAddress, router]);
 
   if (loading) {
     return (
