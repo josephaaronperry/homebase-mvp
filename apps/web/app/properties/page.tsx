@@ -21,7 +21,7 @@ type Property = {
   bedrooms: number | null;
   bathrooms: number | null;
   sqft: number | null;
-  image_url: string | null;
+  imageUrl: string | null;
   propertyType: string | null;
 };
 
@@ -88,11 +88,11 @@ export default function PropertiesPage() {
 
   const buildQuery = useMemo(() => {
     return () => {
-      const select = 'id, title, address, city, state, price, bedrooms, bathrooms, sqft, image_url, propertyType';
+      const select = 'id, title, address, city, state, price, bedrooms, bathrooms, sqft, imageUrl, propertyType';
       let q = supabase
         .from('properties')
         .select(select, { count: 'exact' })
-        .order('created_at', { ascending: false });
+        .order('createdAt', { ascending: false });
       const searchTerm = debouncedSearch.replace(/%/g, '\\%');
       if (searchTerm.length > 0) {
         q = q.or(
@@ -350,7 +350,7 @@ export default function PropertiesPage() {
                     beds={p.bedrooms}
                     baths={p.bathrooms}
                     sqft={p.sqft}
-                    imageUrl={p.image_url}
+                    imageUrl={p.imageUrl}
                     href={`/properties/${p.id}`}
                     showSave
                     saved={savedIds.has(p.id)}

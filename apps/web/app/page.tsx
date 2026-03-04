@@ -5,6 +5,7 @@ import { SearchBar } from '@/components/SearchBar';
 import { supabase } from '@/lib/supabase';
 import { PropertyCard } from '@/components/PropertyCard';
 import { HomepageStats } from '@/components/HomepageStats';
+import { SavingsCalculator } from '@/components/SavingsCalculator';
 
 type Property = {
   id: string | number;
@@ -16,16 +17,16 @@ type Property = {
   bedrooms: number | null;
   bathrooms: number | null;
   sqft: number | null;
-  image_url: string | null;
+  imageUrl: string | null;
 };
 
 async function getFeaturedProperties(): Promise<Property[]> {
   const { data } = await supabase
     .from('properties')
     .select(
-      'id, title, address, city, state, price, bedrooms, bathrooms, sqft, image_url',
+      'id, title, address, city, state, price, bedrooms, bathrooms, sqft, imageUrl',
     )
-    .order('created_at', { ascending: false })
+    .order('createdAt', { ascending: false })
     .limit(6);
 
   return (data ?? []) as Property[];
@@ -97,18 +98,19 @@ export default async function HomePage() {
                 href="/properties"
                 className="flex h-11 flex-1 items-center justify-center rounded-xl bg-emerald-500 px-4 text-sm font-semibold text-slate-950 shadow-md shadow-emerald-500/40 hover:bg-emerald-400"
               >
-                Browse all homes
+                Browse homes
               </Link>
               <Link
-                href="/properties"
-                className="hidden h-11 items-center justify-center rounded-xl border border-white/15 bg-black/40 px-4 text-xs font-semibold text-slate-50 hover:border-emerald-400 sm:flex"
+                href="/sell"
+                className="flex h-11 flex-1 items-center justify-center rounded-xl border border-white/15 bg-black/40 px-4 text-sm font-semibold text-slate-50 hover:border-emerald-400"
               >
-                Advanced filters
+                List your home free
               </Link>
             </div>
           </div>
 
           <HomepageStats listingCount={listingCount} />
+          <SavingsCalculator />
 
           <section className="mt-10">
             <h2 className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-300">
@@ -160,7 +162,7 @@ export default async function HomePage() {
                   beds={property.bedrooms}
                   baths={property.bathrooms}
                   sqft={property.sqft}
-                  imageUrl={property.image_url}
+                  imageUrl={property.imageUrl}
                   href={`/properties/${property.id}`}
                 />
               ))}

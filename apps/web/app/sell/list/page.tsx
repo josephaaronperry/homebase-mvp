@@ -1,11 +1,18 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 const supabase = getSupabaseClient();
+
+async function ensurePropertyPhotosBucket() {
+  const { error: getErr } = await supabase.storage.getBucket('property-photos');
+  if (getErr) {
+    await supabase.storage.createBucket('property-photos', { public: true });
+  }
+}
 
 const PROPERTY_TYPES = [
   { value: 'SINGLE_FAMILY', label: 'House' },
@@ -20,6 +27,11 @@ export default function SellListPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    ensurePropertyPhotosBucket();
+  }, []);
+
   const [form, setForm] = useState({
     address: '',
     city: '',
@@ -97,17 +109,17 @@ export default function SellListPage() {
         address: form.address,
         city: form.city,
         state: form.state,
-        zip_code: form.zipCode || null,
-        property_type: form.propertyType,
+        zipCode: form.zipCode || null,
+        propertyType: form.propertyType,
         bedrooms: form.bedrooms,
         bathrooms: form.bathrooms,
         sqft: sqftNum,
-        year_built: yearNum || null,
-        lot_size: lotNum || null,
+        yearBuilt: yearNum || null,
+        lotSize: lotNum || null,
         price: priceNum,
         description: form.description.trim(),
         features: form.highlights.length ? { highlights: form.highlights } : {},
-        image_url: form.photoUrls[0] || null,
+        imageUrl: form.photoUrls[0] || null,
         images: form.photoUrls,
         status: 'ACTIVE',
       })

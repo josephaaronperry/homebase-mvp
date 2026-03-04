@@ -20,7 +20,7 @@ type SavedPreview = {
   bedrooms: number | null;
   bathrooms: number | null;
   sqft: number | null;
-  image_url: string | null;
+  imageUrl: string | null;
   title: string | null;
 };
 
@@ -49,7 +49,7 @@ type ViewedProperty = {
   city: string | null;
   state: string | null;
   price: number | null;
-  image_url: string | null;
+  imageUrl: string | null;
 };
 
 type PipelinePreview = {
@@ -108,7 +108,7 @@ export default function DashboardPage() {
         supabase
           .from('saved_properties_with_details')
           .select(
-            'id, property_id, price, address, city, state, bedrooms, bathrooms, sqft, image_url, title',
+            'id, property_id, price, address, city, state, bedrooms, bathrooms, sqft, imageUrl, title',
           )
           .limit(6),
         supabase
@@ -172,7 +172,7 @@ export default function DashboardPage() {
       if (viewedIds.length > 0) {
         const { data: props } = await supabase
           .from('properties')
-          .select('id, title, address, city, state, price, image_url')
+          .select('id, title, address, city, state, price, imageUrl')
           .in('id', viewedIds);
         setViewed((props ?? []) as ViewedProperty[]);
       }
@@ -571,7 +571,7 @@ export default function DashboardPage() {
                     beds={s.bedrooms}
                     baths={s.bathrooms}
                     sqft={s.sqft}
-                    imageUrl={s.image_url}
+                    imageUrl={s.imageUrl}
                     href={`/properties/${s.property_id}`}
                   />
                 ))}
@@ -580,14 +580,14 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-6">
-            {/* Recent offers */}
+            {/* My offers */}
             <div className="rounded-3xl border border-slate-800 bg-slate-950/80 p-5">
               <div className="mb-3 flex items-center justify-between">
                 <p className="font-semibold uppercase tracking-[0.3em] text-slate-400">
-                  Recent offers
+                  My offers
                 </p>
                 <Link
-                  href="/offers"
+                  href="/dashboard/offers"
                   className="text-[11px] font-semibold text-emerald-300 hover:text-emerald-200"
                 >
                   View all →
@@ -666,10 +666,10 @@ export default function DashboardPage() {
                       className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-2 hover:border-emerald-500/40"
                     >
                       <div className="h-10 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-slate-800">
-                        {p.image_url ? (
+                        {p.imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={p.image_url}
+                            src={p.imageUrl}
                             alt=""
                             className="h-full w-full object-cover"
                           />

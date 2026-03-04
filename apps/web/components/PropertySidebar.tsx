@@ -8,6 +8,7 @@ const supabase = getSupabaseClient();
 import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { ScheduleTourModal } from '@/components/ScheduleTourModal';
 import { SignInRequiredModal } from '@/components/SignInRequiredModal';
+import { useToast } from '@/components/ToastProvider';
 
 type Props = {
   propertyId: string | number;
@@ -29,9 +30,10 @@ export function PropertySidebar({
   const [tourModalOpen, setTourModalOpen] = useState(false);
   const [signInModalOpen, setSignInModalOpen] = useState(false);
   const [signInModalAction, setSignInModalAction] = useState<'schedule a tour' | 'make an offer'>('schedule a tour');
-  const [agentForm, setAgentForm] = useState({ name: '', email: '', phone: '' });
-  const [agentSubmitting, setAgentSubmitting] = useState(false);
+  const [sellerMessage, setSellerMessage] = useState('');
+  const [sellerSubmitting, setSellerSubmitting] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     const check = async () => {
@@ -76,13 +78,13 @@ export function PropertySidebar({
     ? `$${price.toLocaleString()}`
     : 'Price on request';
 
-  const handleAgentSubmit = async (e: React.FormEvent) => {
+  const handleSellerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setAgentSubmitting(true);
-    // In production: send to CRM or agent notification system
+    setSellerSubmitting(true);
     await new Promise((r) => setTimeout(r, 500));
-    setAgentSubmitting(false);
-    setAgentForm({ name: '', email: '', phone: '' });
+    setSellerSubmitting(false);
+    setSellerMessage('');
+    toast('Message sent to seller.');
   };
 
   return (
@@ -123,59 +125,29 @@ export function PropertySidebar({
             </button>
           </div>
 
-          <form onSubmit={handleAgentSubmit} className="mt-4 space-y-2 border-t border-slate-800 pt-4">
+          <form onSubmit={handleSellerSubmit} className="mt-4 space-y-2 border-t border-slate-800 pt-4">
             <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
-              Contact agent
+              Contact seller
             </div>
             <div>
-              <label htmlFor="agent-name" className="sr-only">
-                Your name
+              <label htmlFor="seller-message" className="sr-only">
+                Message to seller
               </label>
-              <input
-                id="agent-name"
-                className="h-9 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 text-xs text-slate-50 outline-none ring-emerald-500/60 placeholder:text-slate-500 focus:border-emerald-400"
-                placeholder="Your name"
-                value={agentForm.name}
-                onChange={(e) =>
-                  setAgentForm((f) => ({ ...f, name: e.target.value }))
-                }
-              />
-            </div>
-            <div>
-              <label htmlFor="agent-email" className="sr-only">
-                Email
-              </label>
-              <input
-                id="agent-email"
-                type="email"
-                className="h-9 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 text-xs text-slate-50 outline-none ring-emerald-500/60 placeholder:text-slate-500 focus:border-emerald-400"
-                placeholder="Email"
-                value={agentForm.email}
-                onChange={(e) =>
-                  setAgentForm((f) => ({ ...f, email: e.target.value }))
-                }
-              />
-            </div>
-            <div>
-              <label htmlFor="agent-phone" className="sr-only">
-                Phone
-              </label>
-              <input
-                id="agent-phone"
-                className="h-9 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 text-xs text-slate-50 outline-none ring-emerald-500/60 placeholder:text-slate-500 focus:border-emerald-400"
-                placeholder="Phone"
-                value={agentForm.phone}
-                onChange={(e) =>
-                  setAgentForm((f) => ({ ...f, phone: e.target.value }))
-                }
+              <textarea
+                id="seller-message"
+                rows={3}
+                className="h-auto w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-50 outline-none ring-emerald-500/60 placeholder:text-slate-500 focus:border-emerald-400"
+                placeholder="Your message to the seller..."
+                value={sellerMessage}
+                onChange={(e) => setSellerMessage(e.target.value)}
               />
             </div>
             <button
               type="submit"
-              disabled={agentSubmitting}
+              disabled={sellerSubmitting}
               className="w-full rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-700 disabled:opacity-70"
             >
-              Contact agent
+              Send message
             </button>
           </form>
         </div>

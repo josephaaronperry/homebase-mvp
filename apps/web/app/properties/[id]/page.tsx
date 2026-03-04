@@ -23,7 +23,7 @@ type Property = {
   bathrooms: number | null;
   sqft: number | null;
   description: string | null;
-  image_url: string | null;
+  imageUrl: string | null;
   status: string | null;
 };
 
@@ -31,7 +31,7 @@ async function getProperty(id: string): Promise<Property | null> {
   const { data, error } = await supabase
     .from('properties')
     .select(
-      'id, title, address, city, state, price, bedrooms, bathrooms, sqft, description, image_url, status',
+      'id, title, address, city, state, price, bedrooms, bathrooms, sqft, description, imageUrl, status',
     )
     .eq('id', id)
     .maybeSingle();
@@ -51,10 +51,10 @@ async function getSimilar(
   let query = supabase
     .from('properties')
     .select(
-      'id, title, address, city, state, price, bedrooms, bathrooms, sqft, image_url',
+      'id, title, address, city, state, price, bedrooms, bathrooms, sqft, imageUrl',
     )
     .neq('id', id)
-    .order('created_at', { ascending: false })
+    .order('createdAt', { ascending: false })
     .limit(6);
 
   if (city) {
@@ -129,7 +129,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         <section className="overflow-hidden rounded-3xl border border-slate-900 bg-slate-900/60 shadow-2xl shadow-black/60">
           <div className="relative">
             <PropertyGallery
-              imageUrl={property.image_url}
+              imageUrl={property.imageUrl}
               propertyId={property.id}
               title={property.title}
             />
@@ -248,7 +248,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                         beds={p.bedrooms}
                         baths={p.bathrooms}
                         sqft={p.sqft}
-                        imageUrl={p.image_url}
+                        imageUrl={p.imageUrl}
                         href={`/properties/${p.id}`}
                       />
                     ))}
