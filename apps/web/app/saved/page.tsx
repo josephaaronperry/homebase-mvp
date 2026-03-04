@@ -34,12 +34,42 @@ export default function SavedPage() {
         return;
       }
       setError(null);
-      const { data, error: err } = await supabase
-        .from('saved_properties_with_details')
-        .select('*')
+      const { data: savedRows, error: err } = await supabase
+        .from('saved_properties')
+        .select('id, property_id')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      if (err) setError(err.message ?? 'Failed to load saved homes');
-      else setSaved((data ?? []) as SavedProperty[]);
+      if (err) {
+        setError(err.message ?? 'Failed to load saved homes');
+        setLoading(false);
+        return;
+      }
+      const rows = (savedRows ?? []) as { id: string; property_id: string }[];
+      if (rows.length > 0) {
+        const { data: props } = await supabase
+          .from('properties')
+          .select('id, price, address, city, state, bedrooms, bathrooms, image_url')
+          .in('id', rows.map((r) => r.property_id));
+        const propMap = new Map((props ?? []).map((p: { id: string; price: number | null; address: string | null; city: string | null; state: string | null; bedrooms: number | null; bathrooms: number | null; image_url: string | null }) => [p.id, p]));
+        setSaved(
+          rows.map((r) => {
+            const p = propMap.get(r.property_id);
+            return {
+              id: r.id,
+              property_id: r.property_id,
+              price: p?.price ?? null,
+              address: p?.address ?? null,
+              city: p?.city ?? null,
+              state: p?.state ?? null,
+              bedrooms: p?.bedrooms ?? null,
+              bathrooms: p?.bathrooms ?? null,
+              image_url: p?.image_url ?? null,
+            };
+          })
+        );
+      } else {
+        setSaved([]);
+      }
       setLoading(false);
     };
     load();

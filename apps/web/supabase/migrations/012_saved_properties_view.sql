@@ -1,19 +1,12 @@
-create or replace view public.saved_properties_with_details as
-select
-  sp.id,
-  sp.user_id,
-  sp.property_id,
-  sp.created_at as saved_at,
-  p.address,
-  p.city,
-  p.state,
-  p."zipCode",
-  p.price,
-  p.bedrooms,
-  p.bathrooms,
-  p.sqft,
-  p."propertyType",
-  p."imageUrl",
-  p.status
-from public.saved_properties sp
-join public.properties p on p.id = sp.property_id;
+-- Ensure saved_properties has correct schema
+create table if not exists public.saved_properties (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null,
+  property_id text references public.properties not null,
+  created_at timestamptz default now(),
+  unique(user_id, property_id)
+);
+alter table public.saved_properties enable row level security;
+drop policy if exists "Users manage own saved properties" on public.saved_properties;
+create policy "Users manage own saved properties" on public.saved_properties
+  for all using (auth.uid() = user_id);
