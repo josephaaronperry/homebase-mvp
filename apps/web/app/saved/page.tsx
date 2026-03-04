@@ -36,27 +36,27 @@ export default function SavedPage() {
       setError(null);
       const { data: savedRows, error: err } = await supabase
         .from('saved_properties')
-        .select('id, property_id')
-        .eq('user_id', user.id)
+        .select('id, propertyId')
+        .eq('userId', user.id)
         .order('created_at', { ascending: false });
       if (err) {
         setError(err.message ?? 'Failed to load saved homes');
         setLoading(false);
         return;
       }
-      const rows = (savedRows ?? []) as { id: string; property_id: string }[];
+      const rows = (savedRows ?? []) as { id: string; propertyId: string }[];
       if (rows.length > 0) {
         const { data: props } = await supabase
           .from('properties')
           .select('id, price, address, city, state, bedrooms, bathrooms, image_url')
-          .in('id', rows.map((r) => r.property_id));
+          .in('id', rows.map((r) => r.propertyId));
         const propMap = new Map((props ?? []).map((p: { id: string; price: number | null; address: string | null; city: string | null; state: string | null; bedrooms: number | null; bathrooms: number | null; image_url: string | null }) => [p.id, p]));
         setSaved(
           rows.map((r) => {
-            const p = propMap.get(r.property_id);
+            const p = propMap.get(r.propertyId);
             return {
               id: r.id,
-              property_id: r.property_id,
+              property_id: r.propertyId,
               price: p?.price ?? null,
               address: p?.address ?? null,
               city: p?.city ?? null,
@@ -79,7 +79,7 @@ export default function SavedPage() {
     await supabase
       .from('saved_properties')
       .delete()
-      .eq('property_id', propertyId);
+      .eq('propertyId', propertyId);
     setSaved((s) => s.filter((p) => p.property_id !== propertyId));
   };
 

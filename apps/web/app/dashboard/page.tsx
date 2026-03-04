@@ -117,8 +117,8 @@ export default function DashboardPage() {
         supabase.from('saved_properties').select('*', { count: 'exact', head: true }),
         supabase
           .from('saved_properties')
-          .select('id, property_id')
-          .eq('user_id', user.id)
+          .select('id, propertyId')
+          .eq('userId', user.id)
           .limit(6),
         supabase
           .from('showings')
@@ -166,9 +166,9 @@ export default function DashboardPage() {
         total: totalProperties ?? 0,
         saved: savedCount ?? 0,
       });
-      const savedRows = (savedRes.data ?? []) as { id: string; property_id: string }[];
+      const savedRows = (savedRes.data ?? []) as { id: string; propertyId: string }[];
       if (savedRows.length > 0) {
-        const propertyIds = savedRows.map((r) => r.property_id);
+        const propertyIds = savedRows.map((r) => r.propertyId);
         const { data: props } = await supabase
           .from('properties')
           .select('id, price, address, city, state, bedrooms, bathrooms, sqft, imageUrl, title')
@@ -176,10 +176,10 @@ export default function DashboardPage() {
         const propMap = new Map((props ?? []).map((p: { id: string; price: number | null; address: string | null; city: string | null; state: string | null; bedrooms: number | null; bathrooms: number | null; sqft: number | null; imageUrl: string | null; title: string | null }) => [p.id, p]));
         setSaved(
           savedRows.map((r) => {
-            const p = propMap.get(r.property_id) as { price: number | null; address: string | null; city: string | null; state: string | null; bedrooms: number | null; bathrooms: number | null; sqft: number | null; imageUrl: string | null; title: string | null } | undefined;
+            const p = propMap.get(r.propertyId) as { price: number | null; address: string | null; city: string | null; state: string | null; bedrooms: number | null; bathrooms: number | null; sqft: number | null; imageUrl: string | null; title: string | null } | undefined;
             return {
               id: r.id,
-              property_id: r.property_id,
+              property_id: r.propertyId,
               price: p?.price ?? null,
               address: p?.address ?? null,
               city: p?.city ?? null,

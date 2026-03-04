@@ -76,8 +76,8 @@ export default function PropertiesPage() {
         setSavedIds(new Set(guestSaved));
         return;
       }
-      const { data } = await supabase.from('saved_properties').select('property_id');
-      const serverIds = new Set((data ?? []).map((r: { property_id: string | number }) => r.property_id));
+      const { data } = await supabase.from('saved_properties').select('propertyId');
+      const serverIds = new Set((data ?? []).map((r: { propertyId: string | number }) => r.propertyId));
       guestSaved.forEach((id) => serverIds.add(id));
       setSavedIds(serverIds);
     };
@@ -174,10 +174,10 @@ export default function PropertiesPage() {
       return;
     }
     if (isSaved) {
-      await supabase.from('saved_properties').delete().eq('property_id', propertyId).eq('user_id', user.id);
+      await supabase.from('saved_properties').delete().eq('propertyId', propertyId).eq('userId', user.id);
       toast('Removed from saved homes');
     } else {
-      await supabase.from('saved_properties').insert({ property_id: propertyId, user_id: user.id });
+      await supabase.from('saved_properties').insert({ userId: user.id, propertyId: propertyId });
       toast('Saved to favorites');
     }
   };
