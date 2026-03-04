@@ -1,33 +1,30 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { ToastProvider } from '@/components/ToastProvider';
 
-const inter = Inter({ subsets: ['latin'] });
-
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://homebase.example.com'),
   title: {
-    default: 'HomeBase — Modern real estate platform',
+    default: 'HomeBase — Buy your home. Keep the commission.',
     template: '%s | HomeBase',
   },
   description:
-    'Search premium listings, schedule tours, and manage your offers with a Zillow-level experience.',
+    'HomeBase guides you through every step of buying or selling — without an agent. The average buyer saves $23,000.',
   openGraph: {
-    title: 'HomeBase — Modern real estate platform',
+    title: 'HomeBase — Buy your home. Keep the commission.',
     description:
-      'Search premium listings, schedule tours, and manage your offers with a Zillow-level experience.',
+      'HomeBase guides you through every step of buying or selling — without an agent. The average buyer saves $23,000.',
     type: 'website',
     images: [{ url: '/og.png', width: 1200, height: 630, alt: 'HomeBase' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'HomeBase — Modern real estate platform',
+    title: 'HomeBase — Buy your home. Keep the commission.',
     description:
-      'Search premium listings, schedule tours, and manage your offers with a Zillow-level experience.',
+      'HomeBase guides you through every step of buying or selling — without an agent. The average buyer saves $23,000.',
   },
 };
 
@@ -38,16 +35,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className + ' bg-slate-950 text-slate-50'}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body>
         <ToastProvider>
-          <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
-            <Navbar />
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-0 mx-auto h-64 max-w-4xl rounded-full bg-emerald-500/10 blur-3xl" />
-            <div className="relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] max-w-6xl flex-col px-4 pb-10 pt-6 sm:px-6 lg:px-8">
-              {children}
-            </div>
-            <Footer />
-          </div>
+          <Navbar />
+          <main className="min-h-screen">{children}</main>
+          <Footer />
         </ToastProvider>
       </body>
     </html>

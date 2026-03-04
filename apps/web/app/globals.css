@@ -3,21 +3,61 @@
 @tailwind utilities;
 
 :root {
-  --hb-bg: #020617; /* slate-950 */
-  --hb-surface: #020617;
-  --hb-surface-soft: #020617;
-  --hb-border: #020617;
-  --hb-accent: #22c55e; /* emerald-500 */
-  --hb-accent-soft: rgba(34, 197, 94, 0.08);
-  --hb-text: #e5e7eb; /* gray-200 */
-  --hb-text-muted: #9ca3af;
+  /* Brand colors */
+  --color-brand-primary: #1B4332;
+  --color-brand-primary-light: #2D6A4F;
+  --color-brand-primary-subtle: #D8F3DC;
+  --color-brand-accent: #52B788;
+  --color-brand-accent-hover: #40916C;
+
+  /* Neutrals — warm, not cold */
+  --color-bg-base: #FAFAF8;
+  --color-bg-subtle: #F4F3F0;
+  --color-bg-card: #FFFFFF;
+  --color-bg-dark: #0F1F18;
+
+  /* Text */
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #4A4A4A;
+  --color-text-muted: #888888;
+  --color-text-inverse: #FAFAF8;
+
+  /* Borders */
+  --color-border: #E8E6E1;
+  --color-border-strong: #C8C4BC;
+
+  /* Semantic */
+  --color-success: #2D6A4F;
+  --color-warning: #B45309;
+  --color-error: #DC2626;
+
+  /* Typography */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  /* Spacing */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-card-hover: 0 4px 6px rgba(0,0,0,0.07), 0 12px 32px rgba(0,0,0,0.12);
+  --shadow-modal: 0 20px 60px rgba(0,0,0,0.2);
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--hb-bg);
-  color: var(--hb-text);
+  font-family: var(--font-body);
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
 }
 
 @layer base {
@@ -36,4 +76,3 @@ body {
     text-wrap: balance;
   }
 }
-
