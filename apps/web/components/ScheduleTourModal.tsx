@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
@@ -84,17 +85,14 @@ export function ScheduleTourModal({
       const { data, error } = await supabase
         .from('showings')
         .insert({
-          user_id: user.id,
-          property_id: propertyId,
-          property_address: propertyAddress ?? '',
-          property_city: propertyCity ?? '',
-          property_state: propertyState ?? '',
-          scheduled_at: scheduledAt.toISOString(),
+          userId: user.id,
+          propertyId: String(propertyId),
+          requestedAt: scheduledAt.toISOString(),
           status: 'PENDING',
           tour_type: tourType,
           notes: notes.trim() || null,
         })
-        .select('id, scheduled_at, tour_type')
+        .select('id, requestedAt, tour_type')
         .single();
 
       setSubmitting(false);
@@ -102,7 +100,7 @@ export function ScheduleTourModal({
         alert(error.message ?? 'Failed to schedule tour');
         return;
       }
-      const inserted = data as { id: string; scheduled_at: string; tour_type: string };
+      const inserted = data as { id: string; requestedAt: string; tour_type: string };
       try {
         await fetch('/api/showings/send-tour-confirmation', {
           method: 'POST',

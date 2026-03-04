@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service';
@@ -32,14 +33,14 @@ export async function POST(
     const admin = getServiceRoleClient();
     const { data: showing, error: showErr } = await admin
       .from('showings')
-      .select('id, user_id')
+      .select('id, userId')
       .eq('id', showingId)
-      .eq('property_id', propertyId)
+      .eq('propertyId', propertyId)
       .single();
     if (showErr || !showing) {
       return NextResponse.json({ error: 'Showing not found' }, { status: 404 });
     }
-    const buyerId = (showing as { user_id: string }).user_id;
+    const buyerId = (showing as { userId: string }).userId;
     const newStatus = action === 'confirm' ? 'CONFIRMED' : 'CANCELLED';
     await admin.from('showings').update({ status: newStatus }).eq('id', showingId);
     const { data: prop } = await admin.from('properties').select('address').eq('id', propertyId).maybeSingle();

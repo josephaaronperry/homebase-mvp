@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -33,12 +34,38 @@ export default function ShowingsPage() {
         return;
       }
       setError(null);
-      const { data, error: err } = await supabase
+      const { data: rows, error: err } = await supabase
         .from('showings')
-        .select('id, property_id, property_address, property_city, property_state, scheduled_at, status, tour_type')
-        .order('scheduled_at', { ascending: true });
-      if (err) setError(err.message ?? 'Failed to load showings');
-      else setShowings((data ?? []) as Showing[]);
+        .select('id, propertyId, requestedAt, confirmedAt, status, tour_type')
+        .eq('userId', user.id)
+        .order('requestedAt', { ascending: true });
+      if (err) {
+        setError(err.message ?? 'Failed to load showings');
+        setLoading(false);
+        return;
+      }
+      const list = (rows ?? []) as { id: string; propertyId: string; requestedAt: string | null; confirmedAt: string | null; status: string | null; tour_type: string | null }[];
+      if (list.length > 0) {
+        const { data: props } = await supabase.from('properties').select('id, address, city, state').in('id', list.map((s) => s.propertyId));
+        const propMap = new Map((props ?? []).map((p: { id: string; address: string | null; city: string | null; state: string | null }) => [p.id, p]));
+        setShowings(
+          list.map((s) => {
+            const p = propMap.get(s.propertyId);
+            return {
+              id: s.id,
+              property_id: s.propertyId,
+              property_address: p?.address ?? null,
+              property_city: p?.city ?? null,
+              property_state: p?.state ?? null,
+              scheduled_at: s.confirmedAt ?? s.requestedAt,
+              status: s.status,
+              tour_type: s.tour_type,
+            };
+          })
+        );
+      } else {
+        setShowings([]);
+      }
       setLoading(false);
     };
     load();

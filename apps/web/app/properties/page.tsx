@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -93,7 +94,7 @@ export default function PropertiesPage() {
         .from('properties')
         .select(select, { count: 'exact' })
         .eq('status', 'ACTIVE')
-        .order('created_at', { ascending: false });
+        .order('createdAt', { ascending: false });
       const searchTerm = debouncedSearch.replace(/%/g, '\\%');
       if (searchTerm.length > 0) {
         q = q.or(

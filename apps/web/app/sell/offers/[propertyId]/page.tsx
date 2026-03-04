@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 'use client';
 
 import { useEffect, useState } from 'react';

@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service';
@@ -43,8 +44,8 @@ export async function POST(request: NextRequest) {
       const { data: prop } = await admin.from('properties').select('address').eq('id', propertyId).maybeSingle();
       propertyAddress = (prop as { address: string } | null)?.address ?? propertyAddress;
     }
-    const { data: profile } = await admin.from('users').select('full_name').eq('id', user.id).maybeSingle();
-    const buyerName = (profile as { full_name: string | null } | null)?.full_name ?? 'there';
+    const { data: profile } = await admin.from('users').select('fullName').eq('id', user.id).maybeSingle();
+    const buyerName = (profile as { fullName: string | null } | null)?.fullName ?? 'there';
     const lenderName = (selection as { lender_name: string | null }).lender_name ?? 'Your lender';
     const rate = (selection as { rate: number | null }).rate ?? 0;
     const monthly = (selection as { estimated_monthly_payment: number | null }).estimated_monthly_payment ?? 0;

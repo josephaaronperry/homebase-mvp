@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 

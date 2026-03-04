@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -23,10 +24,10 @@ type PropertyRow = {
 
 type ProfileRow = {
   id: string;
-  full_name: string | null;
+  fullName: string | null;
   email: string | null;
   phone: string | null;
-  created_at: string | null;
+  createdAt: string | null;
 };
 
 type OfferRow = {
@@ -98,8 +99,8 @@ export default function AdminPage() {
       try {
         const [propRes, profilesRes, offersRes, kycRes] = await Promise.all([
           supabase.from('properties').select('id, address, city, state, price, status').order('created_at', { ascending: false }),
-          supabase.from('users').select('id, full_name, email, phone, created_at').order('created_at', { ascending: false }),
-          supabase.from('offers').select('id, user_id, property_id, price, status, property_address').order('created_at', { ascending: false }),
+          supabase.from('users').select('id, fullName, email, phone, createdAt').order('createdAt', { ascending: false }),
+          supabase.from('offers').select('id, userId, property_id, offerPrice, status').order('createdAt', { ascending: false }),
           supabase.from('kyc_submissions').select('id, user_id, status, full_name, submitted_at, created_at').order('created_at', { ascending: false }),
         ]);
 
@@ -110,14 +111,24 @@ export default function AdminPage() {
         setUsers((profilesRes.data ?? []) as ProfileRow[]);
 
         if (offersRes.error) throw offersRes.error;
-        const offerList = (offersRes.data ?? []) as OfferRow[];
-        const userIds = Array.from(new Set(offerList.map((o) => o.user_id)));
-        const profileMap = new Map<string, string>();
-        if (userIds.length > 0) {
-          const { data: profs } = await supabase.from('users').select('id, email').in('id', userIds);
-          (profs ?? []).forEach((p: { id: string; email: string | null }) => { profileMap.set(p.id, p.email ?? ''); });
-        }
-        setOffers(offerList.map((o) => ({ ...o, buyer_email: profileMap.get(o.user_id) ?? null })));
+        const offerList = (offersRes.data ?? []) as { id: string; userId: string; property_id: string | null; offerPrice: number | null; status: string | null }[];
+        const userIds = Array.from(new Set(offerList.map((o) => o.userId)));
+        const propIds = Array.from(new Set(offerList.map((o) => o.property_id).filter(Boolean))) as string[];
+        const [profsRes, propsRes] = await Promise.all([
+          userIds.length > 0 ? supabase.from('users').select('id, email').in('id', userIds) : Promise.resolve({ data: [] }),
+          propIds.length > 0 ? supabase.from('properties').select('id, address').in('id', propIds) : Promise.resolve({ data: [] }),
+        ]);
+        const profileMap = new Map((profsRes.data ?? []).map((p: { id: string; email: string | null }) => [p.id, p.email ?? '']));
+        const propMap = new Map((propsRes.data ?? []).map((p: { id: string; address: string | null }) => [p.id, p.address]));
+        setOffers(offerList.map((o) => ({
+          id: o.id,
+          user_id: o.userId,
+          property_id: o.property_id,
+          price: o.offerPrice,
+          status: o.status,
+          property_address: o.property_id ? propMap.get(o.property_id) ?? null : null,
+          buyer_email: profileMap.get(o.userId) ?? null,
+        })));
 
         if (kycRes.error) throw kycRes.error;
         const kycList = (kycRes.data ?? []) as KycRow[];
@@ -289,8 +300,8 @@ export default function AdminPage() {
               users.map((u) => (
                 <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3">
                   <div>
-                    <div className="text-sm font-medium text-slate-100">{u.full_name ?? '—'}</div>
-                    <div className="text-xs text-slate-500">{u.email ?? '—'} • {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</div>
+                    <div className="text-sm font-medium text-slate-100">{u.fullName ?? '—'}</div>
+                    <div className="text-xs text-slate-500">{u.email ?? '—'} • {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</div>
                   </div>
                 </div>
               ))

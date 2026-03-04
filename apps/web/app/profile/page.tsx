@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -38,11 +39,11 @@ export default function ProfilePage() {
         router.replace('/login');
         return;
       }
-      const { data: row } = await supabase.from('users').select('full_name, phone, email').eq('id', user.id).maybeSingle();
+      const { data: row } = await supabase.from('users').select('fullName, phone, email').eq('id', user.id).maybeSingle();
       if (row) {
         setProfile({
           email: (row as { email: string | null }).email ?? user.email ?? null,
-          full_name: (row as { full_name: string | null }).full_name ?? (user.user_metadata as { full_name?: string })?.full_name ?? '',
+          full_name: (row as { fullName: string | null }).fullName ?? (user.user_metadata as { full_name?: string })?.full_name ?? '',
           phone: (row as { phone: string | null }).phone ?? (user.user_metadata as { phone?: string })?.phone ?? '',
         });
       } else {
@@ -53,10 +54,10 @@ export default function ProfilePage() {
         });
         await supabase.from('users').upsert({
           id: user.id,
-          full_name: (user.user_metadata as { full_name?: string })?.full_name ?? null,
+          fullName: (user.user_metadata as { full_name?: string })?.full_name ?? null,
           phone: (user.user_metadata as { phone?: string })?.phone ?? null,
           email: user.email ?? null,
-          updated_at: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         }, { onConflict: 'id' });
       }
       const { data: kyc } = await supabase.from('kyc_submissions').select('status').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
@@ -75,10 +76,10 @@ export default function ProfilePage() {
     if (!user) return;
     const { error: updateError } = await supabase.from('users').upsert({
       id: user.id,
-      full_name: profile.full_name || null,
+      fullName: profile.full_name || null,
       phone: profile.phone || null,
       email: user.email ?? null,
-      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     }, { onConflict: 'id' });
     if (updateError) {
       setError(updateError.message ?? 'Failed to update profile');

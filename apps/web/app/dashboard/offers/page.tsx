@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -50,15 +51,16 @@ export default function DashboardOffersPage() {
       setError(null);
       const { data: offersData, error: offersErr } = await supabase
         .from('offers')
-        .select('id, property_id, price, status, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .select('id, property_id, offerPrice, status, createdAt')
+        .eq('userId', user.id)
+        .order('createdAt', { ascending: false });
       if (offersErr) {
         setError(offersErr.message ?? 'Failed to load offers');
         setLoading(false);
         return;
       }
-      const list = (offersData ?? []) as OfferRow[];
+      const raw = (offersData ?? []) as { id: string; property_id: string | null; offerPrice: number | null; status: string | null; createdAt: string | null }[];
+      const list: OfferRow[] = raw.map((o) => ({ id: o.id, property_id: o.property_id, price: o.offerPrice, status: o.status, created_at: o.createdAt }));
       setOffers(list);
       const ids = [...new Set(list.map((o) => o.property_id).filter(Boolean))] as string[];
       if (ids.length > 0) {

@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service';
@@ -33,14 +34,14 @@ export async function POST(
     const admin = getServiceRoleClient();
     const { data: offer, error: offerErr } = await admin
       .from('offers')
-      .select('id, user_id')
+      .select('id, userId')
       .eq('id', offerId)
       .eq('property_id', propertyId)
       .single();
     if (offerErr || !offer) {
       return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
     }
-    const buyerId = (offer as { user_id: string }).user_id;
+    const buyerId = (offer as { userId: string }).userId;
     await admin.from('offers').update({ status: 'REJECTED' }).eq('id', offerId);
     const { data: prop } = await admin.from('properties').select('address').eq('id', propertyId).maybeSingle();
     const address = (prop as { address: string } | null)?.address ?? 'the property';
@@ -54,8 +55,8 @@ export async function POST(
     const buyerAuth = await admin.auth.admin.getUserById(buyerId);
     const buyerEmail = buyerAuth.data?.user?.email;
     if (buyerEmail) {
-      const { data: profile } = await admin.from('users').select('full_name').eq('id', buyerId).maybeSingle();
-      const buyerName = (profile as { full_name: string | null } | null)?.full_name ?? 'there';
+      const { data: profile } = await admin.from('users').select('fullName').eq('id', buyerId).maybeSingle();
+      const buyerName = (profile as { fullName: string | null } | null)?.fullName ?? 'there';
       await sendEmail({
         to: buyerEmail,
         subject: 'Offer update',

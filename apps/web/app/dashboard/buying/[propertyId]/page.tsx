@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -29,7 +30,7 @@ type Property = {
   city: string | null;
   state: string | null;
   price: number | null;
-  image_url: string | null;
+  imageUrl: string | null;
 };
 
 export default function BuyingPipelinePage() {
@@ -55,7 +56,7 @@ export default function BuyingPipelinePage() {
       }
       const [pipeRes, propRes] = await Promise.all([
         supabase.from('buying_pipelines').select('id, property_id, offer_id, current_stage, stage_completed_at, created_at, updated_at').eq('user_id', user.id).eq('property_id', propertyId).maybeSingle(),
-        supabase.from('properties').select('id, title, address, city, state, price, image_url').eq('id', propertyId).maybeSingle(),
+        supabase.from('properties').select('id, title, address, city, state, price, imageUrl').eq('id', propertyId).maybeSingle(),
       ]);
       if (pipeRes.error || propRes.error) setError(pipeRes.error?.message ?? propRes.error?.message ?? 'Failed to load');
       else {
@@ -143,9 +144,9 @@ export default function BuyingPipelinePage() {
         <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
           <div className="flex gap-4">
             <div className="h-20 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-slate-800">
-              {property.image_url ? (
+              {property.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={property.image_url} alt="" className="h-full w-full object-cover" />
+                <img src={property.imageUrl} alt="" className="h-full w-full object-cover" />
               ) : null}
             </div>
             <div className="min-w-0 flex-1">

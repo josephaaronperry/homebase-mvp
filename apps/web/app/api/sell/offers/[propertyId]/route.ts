@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service';
@@ -28,34 +29,37 @@ export async function GET(
     const admin = getServiceRoleClient();
     const { data: offers, error: offersErr } = await admin
       .from('offers')
-      .select('id, user_id, amount, status, financing_type, closing_date, message_to_seller, created_at')
+      .select('id, userId, offerPrice, status, financingType, closing_date, seller_message, createdAt')
       .eq('property_id', propertyId)
-      .order('created_at', { ascending: false });
+      .order('createdAt', { ascending: false });
     if (offersErr) {
       return NextResponse.json({ error: offersErr.message }, { status: 500 });
     }
-    const userIds = [...new Set((offers ?? []).map((o) => o.user_id).filter(Boolean))] as string[];
+    const userIds = [...new Set((offers ?? []).map((o) => (o as { userId: string }).userId).filter(Boolean))] as string[];
     const profileMap = new Map<string, string>();
     if (userIds.length > 0) {
       const { data: profiles } = await admin
         .from('users')
-        .select('id, full_name')
+        .select('id, fullName')
         .in('id', userIds);
       for (const p of profiles ?? []) {
-        profileMap.set(p.id, (p as { full_name: string | null }).full_name ?? 'Anonymous Buyer');
+        profileMap.set((p as { id: string }).id, (p as { fullName: string | null }).fullName ?? 'Anonymous Buyer');
       }
     }
-    const list = (offers ?? []).map((o) => ({
-      id: o.id,
-      user_id: o.user_id,
-      buyer_name: o.user_id ? profileMap.get(o.user_id) ?? 'Anonymous Buyer' : 'Anonymous Buyer',
-      amount: o.amount,
-      status: o.status,
-      financing_type: o.financing_type,
-      closing_date: o.closing_date,
-      message_to_seller: o.message_to_seller,
-      created_at: o.created_at,
-    }));
+    const list = (offers ?? []).map((o) => {
+      const row = o as { id: string; userId: string; offerPrice: number | null; status: string | null; financingType: string | null; closing_date: string | null; seller_message: string | null; createdAt: string | null };
+      return {
+        id: row.id,
+        user_id: row.userId,
+        buyer_name: row.userId ? profileMap.get(row.userId) ?? 'Anonymous Buyer' : 'Anonymous Buyer',
+        amount: row.offerPrice,
+        status: row.status,
+        financing_type: row.financingType,
+        closing_date: row.closing_date,
+        message_to_seller: row.seller_message,
+        created_at: row.createdAt,
+      };
+    });
     return NextResponse.json({ offers: list });
   } catch (err) {
     return NextResponse.json(

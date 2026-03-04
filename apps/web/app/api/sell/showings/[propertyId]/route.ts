@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service';
@@ -28,26 +29,27 @@ export async function GET(
     const admin = getServiceRoleClient();
     const { data: rows, error: showErr } = await admin
       .from('showings')
-      .select('id, user_id, scheduled_at, tour_type, status')
-      .eq('property_id', propertyId)
-      .order('scheduled_at', { ascending: true });
+      .select('id, userId, requestedAt, confirmedAt, tour_type, status')
+      .eq('propertyId', propertyId)
+      .order('requestedAt', { ascending: true });
     if (showErr) {
       return NextResponse.json({ error: showErr.message }, { status: 500 });
     }
-    const userIds = [...new Set((rows ?? []).map((r) => (r as { user_id: string }).user_id).filter(Boolean))] as string[];
+    const userIds = [...new Set((rows ?? []).map((r) => (r as { userId: string }).userId).filter(Boolean))] as string[];
     const profileMap = new Map<string, string>();
     if (userIds.length > 0) {
-      const { data: profiles } = await admin.from('users').select('id, full_name').in('id', userIds);
+      const { data: profiles } = await admin.from('users').select('id, fullName').in('id', userIds);
       for (const p of profiles ?? []) {
-        profileMap.set((p as { id: string }).id, (p as { full_name: string | null }).full_name ?? 'Buyer');
+        profileMap.set((p as { id: string }).id, (p as { fullName: string | null }).fullName ?? 'Buyer');
       }
     }
     const list = (rows ?? []).map((r) => {
-      const row = r as { id: string; user_id: string; scheduled_at: string | null; tour_type: string | null; status: string | null };
+      const row = r as { id: string; userId: string; requestedAt: string | null; confirmedAt: string | null; tour_type: string | null; status: string | null };
+      const scheduledAt = row.confirmedAt ?? row.requestedAt;
       return {
         id: row.id,
-        buyer_name: profileMap.get(row.user_id) ?? 'Buyer',
-        scheduled_at: row.scheduled_at,
+        buyer_name: profileMap.get(row.userId) ?? 'Buyer',
+        scheduled_at: scheduledAt,
         tour_type: row.tour_type ?? 'IN_PERSON',
         status: row.status ?? 'PENDING',
       };

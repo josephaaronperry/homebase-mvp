@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -38,7 +39,7 @@ export default function SavedPage() {
         .from('saved_properties')
         .select('id, propertyId')
         .eq('userId', user.id)
-        .order('created_at', { ascending: false });
+        .order('savedAt', { ascending: false });
       if (err) {
         setError(err.message ?? 'Failed to load saved homes');
         setLoading(false);

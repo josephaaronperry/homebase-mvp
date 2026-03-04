@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -114,27 +115,26 @@ export default function DashboardPage() {
         dealsRes,
       ] = await Promise.all([
         supabase.from('properties').select('*', { count: 'exact', head: true }),
-        supabase.from('saved_properties').select('*', { count: 'exact', head: true }),
+        supabase.from('saved_properties').select('*', { count: 'exact', head: true }).eq('userId', user.id),
         supabase
           .from('saved_properties')
           .select('id, propertyId')
           .eq('userId', user.id)
+          .order('savedAt', { ascending: false })
           .limit(6),
         supabase
           .from('showings')
-          .select(
-            'id, property_address, property_city, property_state, scheduled_at, tour_type',
-          )
-          .gte('scheduled_at', new Date().toISOString())
+          .select('id, propertyId, requestedAt, confirmedAt, tour_type, status')
+          .eq('userId', user.id)
+          .gte('requestedAt', new Date().toISOString())
           .neq('status', 'CANCELLED')
-          .order('scheduled_at', { ascending: true })
+          .order('requestedAt', { ascending: true })
           .limit(3),
         supabase
           .from('offers')
-          .select(
-            'id, price, status, property_address, property_city, property_state',
-          )
-          .order('created_at', { ascending: false })
+          .select('id, offerPrice, status, property_id')
+          .eq('userId', user.id)
+          .order('createdAt', { ascending: false })
           .limit(5),
         supabase
           .from('kyc_submissions')
@@ -195,11 +195,47 @@ export default function DashboardPage() {
       } else {
         setSaved([]);
       }
-      setShowings((showingsRes.data ?? []) as ShowingPreview[]);
-      const offersData = (offersRes.data ?? []) as OfferPreview[];
-      setOffers(offersData);
-      const accepted = offersData.find((o) => o.status === 'ACCEPTED') ?? null;
-      setAcceptedOffer(accepted);
+      const showingRows = (showingsRes.data ?? []) as { id: string; propertyId: string; requestedAt: string | null; confirmedAt: string | null; tour_type: string | null; status: string }[];
+      if (showingRows.length > 0) {
+        const spIds = [...new Set(showingRows.map((s) => s.propertyId))];
+        const { data: showProps } = await supabase.from('properties').select('id, address, city, state').in('id', spIds);
+        const showPropMap = new Map((showProps ?? []).map((p: { id: string; address: string | null; city: string | null; state: string | null }) => [p.id, p]));
+        setShowings(
+          showingRows.map((s) => ({
+            id: s.id,
+            property_address: (showPropMap.get(s.propertyId) as { address: string | null } | undefined)?.address ?? null,
+            property_city: (showPropMap.get(s.propertyId) as { city: string | null } | undefined)?.city ?? null,
+            property_state: (showPropMap.get(s.propertyId) as { state: string | null } | undefined)?.state ?? null,
+            scheduled_at: s.confirmedAt ?? s.requestedAt,
+            tour_type: s.tour_type,
+          }))
+        );
+      } else {
+        setShowings([]);
+      }
+      const offerRows = (offersRes.data ?? []) as { id: string; offerPrice: number | null; status: string | null; property_id: string | null }[];
+      if (offerRows.length > 0) {
+        const opIds = [...new Set(offerRows.map((o) => o.property_id).filter(Boolean))] as string[];
+        const { data: offerProps } = opIds.length > 0 ? await supabase.from('properties').select('id, address, city, state').in('id', opIds) : { data: [] };
+        const offerPropMap = new Map((offerProps ?? []).map((p: { id: string; address: string | null; city: string | null; state: string | null }) => [p.id, p]));
+        const offersData: OfferPreview[] = offerRows.map((o) => {
+          const p = o.property_id ? offerPropMap.get(o.property_id) as { address: string | null; city: string | null; state: string | null } | undefined : undefined;
+          return {
+            id: o.id,
+            price: o.offerPrice,
+            status: o.status,
+            property_address: p?.address ?? null,
+            property_city: p?.city ?? null,
+            property_state: p?.state ?? null,
+          };
+        });
+        setOffers(offersData);
+        const accepted = offersData.find((o) => o.status === 'ACCEPTED') ?? null;
+        setAcceptedOffer(accepted);
+      } else {
+        setOffers([]);
+        setAcceptedOffer(null);
+      }
       const kyc = (kycRes.data as { status?: string } | null)?.status ?? null;
       setKycStatus(kyc);
       setIsVerified(kyc === 'APPROVED');

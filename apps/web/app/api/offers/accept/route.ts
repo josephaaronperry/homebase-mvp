@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/service';
@@ -31,15 +32,15 @@ export async function POST(request: NextRequest) {
 
     const { data: offer, error: offerErr } = await admin
       .from('offers')
-      .select('id, user_id, property_id, amount')
+      .select('id, userId, property_id, offerPrice')
       .eq('id', offerId)
       .eq('property_id', propertyId)
       .single();
     if (offerErr || !offer) {
       return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
     }
-    const buyerId = (offer as { user_id: string }).user_id;
-    const amount = (offer as { amount: number | null }).amount ?? 0;
+    const buyerId = (offer as { userId: string }).userId;
+    const amount = (offer as { offerPrice: number | null }).offerPrice ?? 0;
 
     const { data: prop, error: propErr } = await admin
       .from('properties')
@@ -106,8 +107,8 @@ export async function POST(request: NextRequest) {
     ]);
     const buyerEmail = buyerAuth.data?.user?.email;
     const sellerEmail = sellerAuth.data?.user?.email;
-    const { data: profiles } = await admin.from('users').select('id, full_name').in('id', [buyerId, user.id]);
-    const profileMap = new Map((profiles ?? []).map((p: { id: string; full_name: string | null }) => [p.id, p.full_name ?? 'there']));
+    const { data: profiles } = await admin.from('users').select('id, fullName').in('id', [buyerId, user.id]);
+    const profileMap = new Map((profiles ?? []).map((p: { id: string; fullName: string | null }) => [p.id, p.fullName ?? 'there']));
     const buyerName = profileMap.get(buyerId) ?? 'there';
     const sellerName = profileMap.get(user.id) ?? 'there';
     if (buyerEmail) {

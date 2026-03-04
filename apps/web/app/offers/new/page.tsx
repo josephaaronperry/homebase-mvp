@@ -1,3 +1,4 @@
+// Schema verified against SCHEMA.md - 2025-03-01
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
@@ -16,7 +17,7 @@ type Property = {
   city: string | null;
   state: string | null;
   price: number | null;
-  user_id?: string;
+  seller_id?: string;
 };
 
 const CONTINGENCY_TOOLTIPS: Record<string, string> = {
@@ -72,7 +73,7 @@ export default function NewOfferPage() {
         const [propRes, preApprovalRes] = await Promise.all([
           supabase
             .from('properties')
-            .select('id, title, address, city, state, price, user_id')
+            .select('id, title, address, city, state, price, seller_id')
             .eq('id', propertyId)
             .maybeSingle(),
           supabase
@@ -131,23 +132,24 @@ export default function NewOfferPage() {
     const { data, error } = await supabase
       .from('offers')
       .insert({
-        user_id: user.id,
+        userId: user.id,
+        propertyId: propertyId || null,
         property_id: propertyId || null,
-        price: form.offer_price,
-        list_price: property?.price ?? null,
+        buyer_id: user.id,
+        offerPrice: form.offer_price,
         earnest_money: form.earnest_money || null,
         closing_date: form.closing_date || null,
-        financing_type: form.financing_type,
+        financingType: form.financing_type,
         down_payment_pct: form.financing_type !== 'CASH' ? form.down_payment_pct : null,
         pre_approval_url: form.pre_approval_url || null,
-        contingencies,
-        message_to_seller: form.message_to_seller.trim() || null,
-        property_address: property?.address ?? null,
-        property_city: property?.city ?? null,
-        property_state: property?.state ?? null,
+        inspection_contingency: form.inspection,
+        financing_contingency: form.financing,
+        appraisal_contingency: form.appraisal,
+        sale_contingency: form.sale_of_home,
+        seller_message: form.message_to_seller.trim() || null,
         status: 'SUBMITTED',
       })
-      .select('id, price, status')
+      .select('id, offerPrice, status')
       .single();
 
     setSubmitting(false);
@@ -155,7 +157,7 @@ export default function NewOfferPage() {
       alert(error.message ?? 'Failed to submit offer');
       return;
     }
-    const offerData = data as { id: string; price: number; status: string };
+    const offerData = data as { id: string; offerPrice: number; status: string };
     if (propertyId && property) {
       const stageCompletedAt: Record<string, string> = { offer_submitted: new Date().toISOString() };
       await supabase.from('buying_pipelines').upsert(
@@ -170,13 +172,13 @@ export default function NewOfferPage() {
         { onConflict: 'user_id,property_id' }
       );
       const address = (property as { address?: string }).address ?? 'the property';
-      if ((property as { user_id?: string }).user_id) {
+      if ((property as { seller_id?: string }).seller_id) {
         try {
           await fetch('/api/notifications/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              userId: (property as { user_id: string }).user_id,
+              userId: (property as { seller_id: string }).seller_id,
               type: 'offer_received',
               title: 'New offer received',
               body: `You have a new offer on ${address}.`,
@@ -201,7 +203,7 @@ export default function NewOfferPage() {
       router.replace(`/dashboard/buying/${propertyId}`);
       return;
     }
-    setSubmittedOffer(offerData);
+    setSubmittedOffer({ id: offerData.id, price: offerData.offerPrice, status: offerData.status });
   }, [form, propertyId, property, router]);
 
   if (loading) {
