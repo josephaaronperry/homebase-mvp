@@ -16,17 +16,23 @@ type Property = {
   bathrooms: number | null;
   sqft: number | null;
   imageUrl: string | null;
+  image_url?: string | null;
+  images?: string[] | null;
   featured?: boolean;
 };
 
-async function getFeaturedProperties(): Promise<Property[]> {
-  const { data } = await supabase
+function getDisplayImage(p: Property): string | null {
+  return p.imageUrl ?? p.image_url ?? (Array.isArray(p.images) ? p.images[0] ?? null : null);
+}
+
+async function getNewestActiveProperties(): Promise<Property[]> {
+  const { data: featuredProperties } = await supabase
     .from('properties')
-    .select('id, title, address, city, state, price, bedrooms, bathrooms, sqft, imageUrl, featured')
+    .select('id, title, address, city, state, price, bedrooms, bathrooms, sqft, imageUrl, image_url, images, featured')
     .eq('status', 'ACTIVE')
     .order('createdAt', { ascending: false })
-    .limit(6);
-  return (data ?? []) as Property[];
+    .limit(4);
+  return (featuredProperties ?? []) as Property[];
 }
 
 async function getListingCount(): Promise<number> {
@@ -106,12 +112,12 @@ const TESTIMONIALS = [
 ];
 
 export default async function HomePage() {
-  const [featured, listingCount] = await Promise.all([
-    getFeaturedProperties(),
+  const [newestActive, listingCount] = await Promise.all([
+    getNewestActiveProperties(),
     getListingCount(),
   ]);
-  const heroPhotos = featured.slice(0, 3);
-  const featuredGrid = featured.slice(0, 4);
+  const heroPhotos = newestActive.slice(0, 3);
+  const featuredGrid = newestActive;
 
   return (
     <>
@@ -175,16 +181,15 @@ export default async function HomePage() {
                     }}
                   >
                     <div className="aspect-[4/3] w-full">
-                      {p.imageUrl ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={p.imageUrl}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full bg-warm-subtle" />
-                      )}
+                      {(() => {
+                        const img = getDisplayImage(p);
+                        return img ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={img} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full w-full bg-warm-subtle" />
+                        );
+                      })()}
                     </div>
                     <div className="p-3 font-body text-sm font-medium text-[var(--color-text-primary)]">
                       {p.price != null ? `$${Number(p.price).toLocaleString()}` : '—'} · {p.city ?? ''}{p.city && p.state ? ', ' : ''}{p.state ?? ''}
@@ -262,7 +267,7 @@ export default async function HomePage() {
                 beds={property.bedrooms}
                 baths={property.bathrooms}
                 sqft={property.sqft}
-                imageUrl={property.imageUrl}
+                imageUrl={getDisplayImage(property)}
                 href={`/properties/${property.id}`}
                 featured={property.featured ?? false}
               />
