@@ -84,11 +84,15 @@ export default function AdminPage() {
         router.replace('/login');
         return;
       }
-      if (!ADMIN_EMAILS.includes(user.email ?? '')) {
+      const email = user.email ?? '';
+      const inAllowlist = ADMIN_EMAILS.includes(email);
+      const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const isAdmin = (profile as { is_admin: boolean | null } | null)?.is_admin;
+      if (!inAllowlist && isAdmin === false) {
         router.replace('/dashboard');
         return;
       }
-      setEmail(user.email ?? null);
+      setEmail(email);
       setError(null);
 
       try {
