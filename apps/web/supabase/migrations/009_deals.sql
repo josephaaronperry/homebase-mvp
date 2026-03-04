@@ -5,7 +5,7 @@ alter table public.offers add column if not exists buyer_id uuid references auth
 create table if not exists public.deals (
   id uuid primary key default gen_random_uuid(),
   property_id text references public.properties not null,
-  offer_id uuid references public.offers not null,
+  offer_id text references public.offers not null,
   buyer_id uuid references auth.users not null,
   seller_id uuid references auth.users not null,
   agreed_price numeric not null,
