@@ -86,7 +86,7 @@ export default function AdminPage() {
       }
       const email = user.email ?? '';
       const inAllowlist = ADMIN_EMAILS.includes(email);
-      const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      const { data: profile } = await supabase.from('users').select('is_admin').eq('id', user.id).maybeSingle();
       const isAdmin = (profile as { is_admin: boolean | null } | null)?.is_admin;
       if (!inAllowlist && isAdmin === false) {
         router.replace('/dashboard');
@@ -98,7 +98,7 @@ export default function AdminPage() {
       try {
         const [propRes, profilesRes, offersRes, kycRes] = await Promise.all([
           supabase.from('properties').select('id, address, city, state, price, status').order('created_at', { ascending: false }),
-          supabase.from('profiles').select('id, full_name, email, phone, created_at').order('created_at', { ascending: false }),
+          supabase.from('users').select('id, full_name, email, phone, created_at').order('created_at', { ascending: false }),
           supabase.from('offers').select('id, user_id, property_id, price, status, property_address').order('created_at', { ascending: false }),
           supabase.from('kyc_submissions').select('id, user_id, status, full_name, submitted_at, created_at').order('created_at', { ascending: false }),
         ]);
@@ -114,7 +114,7 @@ export default function AdminPage() {
         const userIds = Array.from(new Set(offerList.map((o) => o.user_id)));
         const profileMap = new Map<string, string>();
         if (userIds.length > 0) {
-          const { data: profs } = await supabase.from('profiles').select('id, email').in('id', userIds);
+          const { data: profs } = await supabase.from('users').select('id, email').in('id', userIds);
           (profs ?? []).forEach((p: { id: string; email: string | null }) => { profileMap.set(p.id, p.email ?? ''); });
         }
         setOffers(offerList.map((o) => ({ ...o, buyer_email: profileMap.get(o.user_id) ?? null })));
@@ -124,7 +124,7 @@ export default function AdminPage() {
         const kycUserIds = Array.from(new Set(kycList.map((k) => k.user_id)));
         const kycProfileMap = new Map<string, string>();
         if (kycUserIds.length > 0) {
-          const { data: kp } = await supabase.from('profiles').select('id, email').in('id', kycUserIds);
+          const { data: kp } = await supabase.from('users').select('id, email').in('id', kycUserIds);
           (kp ?? []).forEach((p: { id: string; email: string | null }) => { kycProfileMap.set(p.id, p.email ?? ''); });
         }
         setKyc(kycList.map((k) => ({ ...k, user_email: kycProfileMap.get(k.user_id) ?? null })));
@@ -138,7 +138,7 @@ export default function AdminPage() {
           const lenderIds = dealList.map((d) => d.lender_id).filter(Boolean) as string[];
           const [propData, profileData, lenderData, pipelineData] = await Promise.all([
             supabase.from('properties').select('id, address').in('id', propIds),
-            supabase.from('profiles').select('id, email').in('id', buyerSellerIds),
+            supabase.from('users').select('id, email').in('id', buyerSellerIds),
             lenderIds.length > 0 ? supabase.from('lender_selections').select('id, lender_name').in('id', lenderIds) : Promise.resolve({ data: [] }),
             supabase.from('buying_pipelines').select('user_id, property_id, current_stage').in('property_id', propIds),
           ]);
@@ -284,7 +284,7 @@ export default function AdminPage() {
         {activeTab === 'users' && (
           <div className="mt-6 space-y-3">
             {users.length === 0 ? (
-              <p className="rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center text-slate-400">No users in profiles yet.</p>
+              <p className="rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center text-slate-400">No users yet.</p>
             ) : (
               users.map((u) => (
                 <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3">

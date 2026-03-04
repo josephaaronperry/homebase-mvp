@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (!toEmail) {
       return NextResponse.json({ ok: true });
     }
-    const { data: profile } = await admin.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+    const { data: profile } = await admin.from('users').select('full_name').eq('id', userId).maybeSingle();
     const buyerName = (profile as { full_name: string | null } | null)?.full_name ?? 'there';
 
     await sendEmail({

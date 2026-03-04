@@ -38,7 +38,7 @@ export async function GET(
     const profileMap = new Map<string, string>();
     if (userIds.length > 0) {
       const { data: profiles } = await admin
-        .from('profiles')
+        .from('users')
         .select('id, full_name')
         .in('id', userIds);
       for (const p of profiles ?? []) {

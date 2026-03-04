@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     ]);
     const buyerEmail = buyerAuth.data?.user?.email;
     const sellerEmail = sellerAuth.data?.user?.email;
-    const { data: profiles } = await admin.from('profiles').select('id, full_name').in('id', [buyerId, user.id]);
+    const { data: profiles } = await admin.from('users').select('id, full_name').in('id', [buyerId, user.id]);
     const profileMap = new Map((profiles ?? []).map((p: { id: string; full_name: string | null }) => [p.id, p.full_name ?? 'there']));
     const buyerName = profileMap.get(buyerId) ?? 'there';
     const sellerName = profileMap.get(user.id) ?? 'there';

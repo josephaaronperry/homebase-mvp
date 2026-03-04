@@ -38,7 +38,7 @@ export default function ProfilePage() {
         router.replace('/login');
         return;
       }
-      const { data: row } = await supabase.from('profiles').select('full_name, phone, email').eq('id', user.id).maybeSingle();
+      const { data: row } = await supabase.from('users').select('full_name, phone, email').eq('id', user.id).maybeSingle();
       if (row) {
         setProfile({
           email: (row as { email: string | null }).email ?? user.email ?? null,
@@ -51,7 +51,7 @@ export default function ProfilePage() {
           full_name: (user.user_metadata as { full_name?: string })?.full_name ?? '',
           phone: (user.user_metadata as { phone?: string })?.phone ?? '',
         });
-        await supabase.from('profiles').upsert({
+        await supabase.from('users').upsert({
           id: user.id,
           full_name: (user.user_metadata as { full_name?: string })?.full_name ?? null,
           phone: (user.user_metadata as { phone?: string })?.phone ?? null,
@@ -73,7 +73,7 @@ export default function ProfilePage() {
     setSuccess(false);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { error: updateError } = await supabase.from('profiles').upsert({
+    const { error: updateError } = await supabase.from('users').upsert({
       id: user.id,
       full_name: profile.full_name || null,
       phone: profile.phone || null,

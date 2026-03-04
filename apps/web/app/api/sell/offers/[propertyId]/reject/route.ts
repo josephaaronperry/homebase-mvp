@@ -54,7 +54,7 @@ export async function POST(
     const buyerAuth = await admin.auth.admin.getUserById(buyerId);
     const buyerEmail = buyerAuth.data?.user?.email;
     if (buyerEmail) {
-      const { data: profile } = await admin.from('profiles').select('full_name').eq('id', buyerId).maybeSingle();
+      const { data: profile } = await admin.from('users').select('full_name').eq('id', buyerId).maybeSingle();
       const buyerName = (profile as { full_name: string | null } | null)?.full_name ?? 'there';
       await sendEmail({
         to: buyerEmail,

@@ -37,7 +37,7 @@ export async function GET(
     const userIds = [...new Set((rows ?? []).map((r) => (r as { user_id: string }).user_id).filter(Boolean))] as string[];
     const profileMap = new Map<string, string>();
     if (userIds.length > 0) {
-      const { data: profiles } = await admin.from('profiles').select('id, full_name').in('id', userIds);
+      const { data: profiles } = await admin.from('users').select('id, full_name').in('id', userIds);
       for (const p of profiles ?? []) {
         profileMap.set((p as { id: string }).id, (p as { full_name: string | null }).full_name ?? 'Buyer');
       }
