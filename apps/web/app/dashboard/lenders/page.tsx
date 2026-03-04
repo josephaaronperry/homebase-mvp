@@ -68,14 +68,14 @@ export default function LendersPage() {
     const loanAmount = (preApproval?.estimated_max ?? preApproval?.estimated_min ?? 400000) * 0.8;
     const years = lender.loanType.startsWith('15') ? 15 : 30;
     const estMonthly = Math.round(monthlyPayment(loanAmount, lender.rate, years));
-    const { error: selError } = await supabase.from('lender_selections').insert({
+    const { data: selData, error: selError } = await supabase.from('lender_selections').insert({
       user_id: user.id,
       buying_pipeline_id: pipeline.id,
       lender_name: lender.name,
       lender_loan_type: lender.loanType,
       interest_rate: lender.rate,
       estimated_monthly_payment: estMonthly,
-    });
+    }).select('id').single();
     if (selError) {
       if (selError.code === '23505') {
         router.replace(propertyId ? `/dashboard/buying/${propertyId}` : '/dashboard');
@@ -84,6 +84,9 @@ export default function LendersPage() {
       alert(selError.message);
       setSelecting(null);
       return;
+    }
+    if (propertyId && selData?.id) {
+      await supabase.from('deals').update({ lender_id: (selData as { id: string }).id, updated_at: new Date().toISOString() }).eq('property_id', propertyId).eq('buyer_id', user.id);
     }
     const completedRes = await supabase.from('buying_pipelines').select('stage_completed_at').eq('id', pipeline.id).single();
     const completed = (completedRes.data as { stage_completed_at: Record<string, string> } | null)?.stage_completed_at ?? {};
@@ -142,7 +145,12 @@ export default function LendersPage() {
         <p className="mt-1 text-sm text-slate-400">
           Compare rates and select a lender. Your estimated loan amount is used for monthly payment estimates.
         </p>
-        {propertyAddress && <p className="mt-2 text-xs text-slate-500">Property: {propertyAddress}</p>}
+        {propertyId && propertyAddress && (
+          <div className="mt-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+            You have an accepted offer on <span className="font-semibold">{propertyAddress}</span>. Select a lender to continue your transaction.
+          </div>
+        )}
+        {propertyAddress && !propertyId && <p className="mt-2 text-xs text-slate-500">Property: {propertyAddress}</p>}
 
         {propertyId && !pipeline && (
           <div className="mt-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">

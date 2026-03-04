@@ -42,13 +42,13 @@ export async function GET(
         .select('id, full_name')
         .in('id', userIds);
       for (const p of profiles ?? []) {
-        profileMap.set(p.id, (p as { full_name: string | null }).full_name ?? 'Buyer');
+        profileMap.set(p.id, (p as { full_name: string | null }).full_name ?? 'Anonymous Buyer');
       }
     }
     const list = (offers ?? []).map((o) => ({
       id: o.id,
       user_id: o.user_id,
-      buyer_name: o.user_id ? profileMap.get(o.user_id) ?? 'Buyer' : 'Buyer',
+      buyer_name: o.user_id ? profileMap.get(o.user_id) ?? 'Anonymous Buyer' : 'Anonymous Buyer',
       amount: o.amount,
       status: o.status,
       financing_type: o.financing_type,

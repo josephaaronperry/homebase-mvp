@@ -42,6 +42,9 @@ export default function SellOffersPropertyPage() {
   const [error, setError] = useState<string | null>(null);
   const [acting, setActing] = useState<string | null>(null);
 
+  const hasAccepted = offers.some((o) => o.status === 'ACCEPTED');
+  const canActOnOffer = (o: OfferRow) => o.status === 'PENDING' && !hasAccepted;
+
   useEffect(() => {
     if (!propertyId) return;
     const load = async () => {
@@ -71,14 +74,17 @@ export default function SellOffersPropertyPage() {
     load();
   }, [propertyId, router]);
 
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const handleAccept = async (offerId: string) => {
     if (!propertyId) return;
     setActing(offerId);
+    setSuccessMessage(null);
     try {
-      const res = await fetch(`/api/sell/offers/${propertyId}/accept`, {
+      const res = await fetch('/api/offers/accept', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ offerId }),
+        body: JSON.stringify({ offerId, propertyId }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -86,7 +92,14 @@ export default function SellOffersPropertyPage() {
         setActing(null);
         return;
       }
-      setOffers((prev) => prev.map((o) => (o.id === offerId ? { ...o, status: 'ACCEPTED' } : o)));
+      setSuccessMessage('Offer accepted. The buyer has been notified.');
+      const [listRes] = await Promise.all([
+        fetch(`/api/sell/offers/${propertyId}`),
+      ]);
+      if (listRes.ok) {
+        const data = await listRes.json();
+        setOffers(data.offers ?? []);
+      }
     } finally {
       setActing(null);
     }
@@ -148,12 +161,18 @@ export default function SellOffersPropertyPage() {
         ) : offers.length === 0 ? (
           <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center">
             <p className="text-4xl mb-3">📋</p>
-            <p className="text-sm text-slate-400">No offers on this property yet.</p>
+            <p className="text-sm text-slate-400">No offers yet. Share your listing to attract buyers.</p>
             <Link href="/sell/dashboard" className="mt-4 inline-block text-sm font-semibold text-emerald-400 hover:text-emerald-300">
               Back to dashboard
             </Link>
           </div>
         ) : (
+          <>
+            {successMessage && (
+              <div className="mb-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                {successMessage}
+              </div>
+            )}
           <div className="mt-6 space-y-4">
             {offers.map((o) => (
               <div
@@ -177,7 +196,7 @@ export default function SellOffersPropertyPage() {
                     Message: {o.message_to_seller}
                   </p>
                 )}
-                {o.status === 'PENDING' && (
+                {canActOnOffer(o) && (
                   <div className="mt-4 flex gap-2">
                     <button
                       type="button"
@@ -191,7 +210,7 @@ export default function SellOffersPropertyPage() {
                       type="button"
                       disabled={acting !== null}
                       onClick={() => handleReject(o.id)}
-                      className="rounded-xl border border-slate-600 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+                      className="rounded-xl border border-rose-500/60 bg-transparent px-4 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 disabled:opacity-50"
                     >
                       {acting === o.id ? 'Rejecting…' : 'Reject offer'}
                     </button>
@@ -200,6 +219,7 @@ export default function SellOffersPropertyPage() {
               </div>
             ))}
           </div>
+          </>
         )}
       </main>
     </div>

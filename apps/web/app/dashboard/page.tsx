@@ -62,6 +62,14 @@ type PipelinePreview = {
   property_price: number | null;
 };
 
+type DealPreview = {
+  id: string;
+  property_id: string;
+  agreed_price: number | null;
+  status: string;
+  property_address: string | null;
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const [userName, setUserName] = useState<string | null>(null);
@@ -74,6 +82,7 @@ export default function DashboardPage() {
   const [viewed, setViewed] = useState<ViewedProperty[]>([]);
   const [acceptedOffer, setAcceptedOffer] = useState<OfferPreview | null>(null);
   const [pipelines, setPipelines] = useState<PipelinePreview[]>([]);
+  const [deals, setDeals] = useState<DealPreview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [kycStatus, setKycStatus] = useState<string | null>(null);
@@ -102,6 +111,7 @@ export default function DashboardPage() {
         kycRes,
         viewedRes,
         pipelinesRes,
+        dealsRes,
       ] = await Promise.all([
         supabase.from('properties').select('*', { count: 'exact', head: true }),
         supabase.from('saved_properties').select('*', { count: 'exact', head: true }),
@@ -145,6 +155,7 @@ export default function DashboardPage() {
           .select('id, property_id, current_stage')
           .eq('user_id', user.id)
           .neq('current_stage', 'closing'),
+        supabase.from('deals').select('id, property_id, agreed_price, status').eq('buyer_id', user.id),
       ]);
 
       if (savedRes.error || showingsRes.error || offersRes.error || pipelinesRes.error) {
@@ -178,23 +189,38 @@ export default function DashboardPage() {
       }
 
       const pipelineRows = (pipelinesRes.data ?? []) as { id: string; property_id: string; current_stage: string }[];
-      if (pipelineRows.length > 0) {
+      const dealRows = (dealsRes.data ?? []) as { id: string; property_id: string; agreed_price: number | null; status: string }[];
+      const allPropertyIds = [...new Set([...pipelineRows.map((p) => p.property_id), ...dealRows.map((d) => d.property_id)])].filter(Boolean);
+      if (pipelineRows.length > 0 || dealRows.length > 0) {
         const { data: props } = await supabase
           .from('properties')
           .select('id, address, city, state, price')
-          .in('id', pipelineRows.map((p) => p.property_id));
+          .in('id', allPropertyIds);
         const propMap = new Map((props ?? []).map((p: { id: string; address: string | null; city: string | null; state: string | null; price: number | null }) => [p.id, p]));
-        setPipelines(
-          pipelineRows.map((row) => ({
-            id: row.id,
-            property_id: row.property_id,
-            current_stage: row.current_stage,
-            property_address: (propMap.get(row.property_id) as { address: string | null } | undefined)?.address ?? null,
-            property_city: (propMap.get(row.property_id) as { city: string | null } | undefined)?.city ?? null,
-            property_state: (propMap.get(row.property_id) as { state: string | null } | undefined)?.state ?? null,
-            property_price: (propMap.get(row.property_id) as { price: number | null } | undefined)?.price ?? null,
-          }))
-        );
+        if (pipelineRows.length > 0) {
+          setPipelines(
+            pipelineRows.map((row) => ({
+              id: row.id,
+              property_id: row.property_id,
+              current_stage: row.current_stage,
+              property_address: (propMap.get(row.property_id) as { address: string | null } | undefined)?.address ?? null,
+              property_city: (propMap.get(row.property_id) as { city: string | null } | undefined)?.city ?? null,
+              property_state: (propMap.get(row.property_id) as { state: string | null } | undefined)?.state ?? null,
+              property_price: (propMap.get(row.property_id) as { price: number | null } | undefined)?.price ?? null,
+            }))
+          );
+        }
+        if (dealRows.length > 0) {
+          setDeals(
+            dealRows.map((row) => ({
+              id: row.id,
+              property_id: row.property_id,
+              agreed_price: row.agreed_price,
+              status: row.status,
+              property_address: (propMap.get(row.property_id) as { address: string | null } | undefined)?.address ?? null,
+            }))
+          );
+        }
       }
 
       setLoading(false);
@@ -362,6 +388,37 @@ export default function DashboardPage() {
               {acceptedOffer.status}
             </span>
           </Link>
+        )}
+
+        {/* Active deals */}
+        {deals.length > 0 && (
+          <div className="mb-6 rounded-3xl border border-slate-800 bg-slate-950/80 p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">
+              Active deals
+            </p>
+            <p className="mt-1 text-sm text-slate-400">
+              Deals where your offer was accepted — track progress to closing.
+            </p>
+            <div className="mt-4 space-y-2">
+              {deals.map((deal) => (
+                <Link
+                  key={deal.id}
+                  href={`/dashboard/buying/${deal.property_id}`}
+                  className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 hover:border-emerald-500/50"
+                >
+                  <div>
+                    <p className="font-medium text-slate-50">
+                      {deal.property_address ?? 'Property'}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {deal.agreed_price != null ? `$${deal.agreed_price.toLocaleString()}` : '—'} · {deal.status}
+                    </p>
+                  </div>
+                  <span className="text-slate-500">→</span>
+                </Link>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Active transactions (buying pipelines) */}

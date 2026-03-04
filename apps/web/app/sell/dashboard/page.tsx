@@ -18,6 +18,8 @@ type Listing = {
 };
 
 type OfferCounts = Record<string, number>;
+type ShowingCounts = Record<string, number>;
+type DealPropertyIds = Set<string>;
 
 function statusLabel(s: string): string {
   if (s === 'pending_review') return 'Pending Review';
@@ -39,6 +41,8 @@ export default function SellDashboardPage() {
   const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
   const [offerCounts, setOfferCounts] = useState<OfferCounts>({});
+  const [showingCounts, setShowingCounts] = useState<ShowingCounts>({});
+  const [dealPropertyIds, setDealPropertyIds] = useState<DealPropertyIds>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,9 +54,11 @@ export default function SellDashboardPage() {
         return;
       }
       setError(null);
-      const [listRes, countsRes] = await Promise.all([
+      const [listRes, countsRes, showingsCountsRes, dealsRes] = await Promise.all([
         supabase.from('seller_listings').select('id, property_id, status').eq('user_id', user.id).order('created_at', { ascending: false }),
         fetch('/api/sell/offers/counts').then((r) => r.ok ? r.json() : { counts: {} }),
+        fetch('/api/sell/showings/counts').then((r) => r.ok ? r.json() : { counts: {} }),
+        supabase.from('deals').select('property_id').eq('seller_id', user.id),
       ]);
       const { data: rows, error: listErr } = listRes;
       if (listErr) {
@@ -61,6 +67,9 @@ export default function SellDashboardPage() {
         return;
       }
       if (countsRes?.counts) setOfferCounts(countsRes.counts as OfferCounts);
+      if (showingsCountsRes?.counts) setShowingCounts(showingsCountsRes.counts as ShowingCounts);
+      const dealIds = new Set((dealsRes.data ?? []).map((d: { property_id: string }) => d.property_id));
+      setDealPropertyIds(dealIds);
       if (rows && rows.length > 0) {
         const ids = rows.map((r: { property_id: string }) => r.property_id);
         const { data: props, error: propErr } = await supabase.from('properties').select('id, address, city, state, price').in('id', ids);
@@ -119,26 +128,26 @@ export default function SellDashboardPage() {
                   <div className="text-sm font-medium text-slate-100">
                     {l.address ?? 'Property'}, {l.city}, {l.state}
                   </div>
-                  <div className="mt-1 flex items-center gap-2">
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
                     <span className="text-xs text-slate-500">
                       ${l.price?.toLocaleString() ?? '—'}
                     </span>
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusClass(l.status)}`}>
                       {statusLabel(l.status)}
                     </span>
+                    {dealPropertyIds.has(l.property_id) && (
+                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+                        Under contract
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <Link href={`/sell/offers/${l.property_id}`} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">
-                    Offers
-                    {(offerCounts[l.property_id] ?? 0) > 0 && (
-                      <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
-                        {offerCounts[l.property_id]}
-                      </span>
-                    )}
+                    {(offerCounts[l.property_id] ?? 0)} offers
                   </Link>
                   <Link href={`/sell/showings/${l.property_id}`} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">
-                    Showings
+                    {(showingCounts[l.property_id] ?? 0)} showings
                   </Link>
                   <Link href={`/properties/${l.property_id}`} className="text-xs font-semibold text-emerald-400 hover:text-emerald-300">
                     View listing
