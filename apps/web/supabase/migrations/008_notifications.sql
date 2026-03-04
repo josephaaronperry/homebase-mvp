@@ -1,4 +1,5 @@
-create table if not exists public.notifications (
+drop table if exists public.notifications cascade;
+create table public.notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users not null,
   type text not null,
@@ -9,6 +10,5 @@ create table if not exists public.notifications (
   created_at timestamptz default now()
 );
 alter table public.notifications enable row level security;
-drop policy if exists "Users can manage own notifications" on public.notifications;
 create policy "Users can manage own notifications" on public.notifications
   for all using (auth.uid() = user_id);
