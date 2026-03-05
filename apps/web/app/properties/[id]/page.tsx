@@ -53,7 +53,7 @@ type PropertyRow = {
   images: string[] | null;
   propertyType: string | null;
   status: string | null;
-  hoaFee: number | null;
+  hoa_fee: number | null;
   garage: boolean | number | string | null;
 };
 
@@ -75,7 +75,7 @@ async function getProperty(id: string): Promise<PropertyRow | null> {
   const { data, error } = await supabase
     .from('properties')
     .select(
-      'id, title, address, city, state, zipCode, price, bedrooms, bathrooms, sqft, lotSize, yearBuilt, description, image_url, images, propertyType, status, hoaFee, garage'
+      'id, title, address, city, state, zipCode, price, bedrooms, bathrooms, sqft, lotSize, yearBuilt, description, image_url, images, propertyType, status, hoa_fee, garage'
     )
     .eq('id', id)
     .maybeSingle();

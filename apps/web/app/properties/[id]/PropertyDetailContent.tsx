@@ -28,7 +28,7 @@ export type PropertyDetail = {
   images: string[] | null;
   propertyType: string | null;
   status: string | null;
-  hoaFee: number | null;
+  hoa_fee: number | null;
   garage: boolean | number | string | null;
 };
 
@@ -285,7 +285,7 @@ export function PropertyDetailContent({ property, similarProperties, propertyUrl
                 <div className="border-t border-[#E8E6E1] px-4 py-3 text-sm text-[#4A4A4A]">
                   <p><strong className="text-[#1A1A1A]">Property type:</strong> {property.propertyType?.replace(/_/g, ' ') ?? '—'}</p>
                   <p className="mt-1"><strong className="text-[#1A1A1A]">Parking:</strong> {property.garage != null && property.garage !== false ? (typeof property.garage === 'number' ? `${property.garage}+ garage` : 'Garage') : '—'}</p>
-                  <p className="mt-1"><strong className="text-[#1A1A1A]">HOA fee:</strong> {property.hoaFee != null && property.hoaFee > 0 ? `$${property.hoaFee}/mo` : 'None'}</p>
+                  <p className="mt-1"><strong className="text-[#1A1A1A]">HOA fee:</strong> {property.hoa_fee != null && property.hoa_fee > 0 ? `$${property.hoa_fee}/mo` : 'None'}</p>
                   <p className="mt-1"><strong className="text-[#1A1A1A]">MLS #:</strong> —</p>
                   <p className="mt-1"><strong className="text-[#1A1A1A]">Status:</strong> {property.status ?? 'For sale'}</p>
                 </div>
