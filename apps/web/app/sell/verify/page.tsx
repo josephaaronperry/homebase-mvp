@@ -12,14 +12,24 @@ const LISTING_AGREEMENT_BULLETS = [
   'I will respond to offers and showings in good faith.',
   'Listing details are accurate to the best of my knowledge.',
   'I agree to the platform fee and terms of service.',
+  'I agree to HomeBase Seller Terms.',
 ];
 
 const AGENT_AGREEMENT_BULLETS = [
   'You represent that you are a licensed real estate agent in good standing.',
-  'You have authorization from your client to list this property on HomeBase.',
+  'You confirm you have your client\'s authorization to list this property.',
   'Listing details are accurate to the best of your knowledge.',
   'You agree to the platform fee and terms of service for agents.',
   'You will respond to offers and showings in good faith on behalf of your client.',
+];
+
+const US_STATES = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC'];
+
+const OWNERSHIP_DOC_TYPES = [
+  { value: 'property_tax_bill', label: 'Property tax bill' },
+  { value: 'mortgage_statement', label: 'Mortgage statement' },
+  { value: 'title_deed', label: 'Title / Deed' },
+  { value: 'utility_bill', label: 'Utility bill at this address' },
 ];
 
 export default function SellVerifyPage() {
@@ -47,6 +57,7 @@ export default function SellVerifyPage() {
     ownership_city: '',
     ownership_state: '',
     ownership_zip: '',
+    ownership_doc_type: 'property_tax_bill' as string,
     ownership_doc_url: '',
     signature: '',
     agreedToTerms: false,
@@ -179,16 +190,20 @@ export default function SellVerifyPage() {
       payload.id_back_url = form.id_back_url || null;
       payload.ownership_doc_url = form.ownership_doc_url || null;
       payload.ownership_property_address = ownershipAddressString || null;
+      payload.proof_type = form.ownership_doc_type || null;
       payload.listing_agreement_signed_at = new Date().toISOString();
     }
 
     const { error } = await supabase.from('kyc_submissions').insert(payload);
-    setSubmitting(false);
     if (error) {
+      setSubmitting(false);
       alert(error.message ?? 'Failed to submit');
       return;
     }
-    setStep(isAgent ? 4 : 5);
+    const { error: updateErr } = await supabase.from('users').update({ kycStatus: 'PENDING' }).eq('id', user.id);
+    if (updateErr) console.warn('Could not update users.kycStatus:', updateErr.message);
+    setSubmitting(false);
+    setStep(isAgent ? 3 : 4);
   };
 
   if (loading) {
@@ -203,36 +218,38 @@ export default function SellVerifyPage() {
     { n: 1 as Step, label: 'Identity' },
     { n: 2 as Step, label: 'Ownership' },
     { n: 3 as Step, label: 'Agreement' },
-    { n: 4 as Step, label: 'Review' },
-    { n: 5 as Step, label: 'Pending' },
   ];
   const stepsAgent = [
     { n: 1 as Step, label: 'License' },
     { n: 2 as Step, label: 'Agreement' },
-    { n: 3 as Step, label: 'Review' },
-    { n: 4 as Step, label: 'Pending' },
   ];
   const steps = isAgent ? stepsAgent : stepsFsbo;
+  const displayStepFsbo = step <= 3 ? step : 3;
+  const displayStepAgent = step <= 2 ? step : 2;
 
   return (
     <div className="flex min-h-screen flex-col bg-[#FAFAF8] text-[#1A1A1A]">
       <main className="mx-auto w-full max-w-xl flex-1 px-4 py-8 sm:px-6">
         <Link href="/sell" className="mb-6 inline-flex items-center gap-2 text-xs font-medium text-[#4A4A4A] hover:text-[#52B788]">← Sell</Link>
 
-        <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[#1A1A1A]">{isAgent ? 'Agent verification' : 'Seller verification'}</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[#1A1A1A]">{isAgent ? 'Verify your agent license' : 'Verify your identity as a seller'}</h1>
         <p className="mt-1 text-sm text-[#4A4A4A]">{isAgent ? 'Verify your license to list on behalf of your client.' : 'Verify your identity and property ownership to list your home.'}</p>
 
         <div className="mt-6 flex gap-2">
-          {steps.map(({ n, label }) => (
-            <div
-              key={n}
-              className={`flex-1 rounded-lg px-2 py-1.5 text-center text-[10px] font-medium ${
-                step === n ? 'bg-[#1B4332] text-white' : step > n ? 'bg-[#E8E6E1] text-[#4A4A4A]' : 'bg-[#F4F3F0] text-[#888888]'
-              }`}
-            >
-              {label}
-            </div>
-          ))}
+          {steps.map(({ n, label }) => {
+            const active = isAgent ? (n === displayStepAgent) : (n === displayStepFsbo);
+            const done = isAgent ? (n < displayStepAgent || step > 2) : (n < displayStepFsbo || step > 3);
+            return (
+              <div
+                key={n}
+                className={`flex-1 rounded-lg px-2 py-1.5 text-center text-[10px] font-medium ${
+                  active ? 'bg-[#1B4332] text-white' : done ? 'bg-[#E8E6E1] text-[#4A4A4A]' : 'bg-[#F4F3F0] text-[#888888]'
+                }`}
+              >
+                {label}
+              </div>
+            );
+          })}
         </div>
 
         <div className="mt-8 rounded-2xl border border-[#E8E6E1] bg-white p-6 shadow-sm">
@@ -249,7 +266,12 @@ export default function SellVerifyPage() {
               </div>
               <div>
                 <label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-[#4A4A4A]">State of license *</label>
-                <input value={form.license_state} onChange={(e) => setForm((f) => ({ ...f, license_state: e.target.value }))} className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm" placeholder="e.g. CA" />
+                <select value={form.license_state} onChange={(e) => setForm((f) => ({ ...f, license_state: e.target.value }))} className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A]">
+                  <option value="">Select state</option>
+                  {US_STATES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-[#4A4A4A]">Brokerage name *</label>
@@ -281,6 +303,10 @@ export default function SellVerifyPage() {
                 ))}
               </ul>
               <div>
+                <label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-[#4A4A4A]">Client name (seller you represent) *</label>
+                <input value={form.client_name} onChange={(e) => setForm((f) => ({ ...f, client_name: e.target.value }))} className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm" placeholder="Full legal name of seller" />
+              </div>
+              <div>
                 <label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-[#4A4A4A]">Sign (type your full name)</label>
                 <input value={form.agent_signature} onChange={(e) => setForm((f) => ({ ...f, agent_signature: e.target.value }))} className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm" placeholder="John Smith" />
               </div>
@@ -290,22 +316,7 @@ export default function SellVerifyPage() {
               </label>
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => setStep(1)} className="flex-1 rounded-xl border border-[#E8E6E1] py-2 text-xs font-semibold text-[#4A4A4A]">Back</button>
-                <button type="button" onClick={() => setStep(3)} disabled={!form.agent_signature.trim() || !form.agent_agreed} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-xs font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">Continue</button>
-              </div>
-            </div>
-          )}
-          {isAgent && step === 3 && (
-            <div className="space-y-4">
-              <h2 className="text-sm font-semibold text-[#1A1A1A]">Review and submit</h2>
-              <div className="rounded-xl border border-[#E8E6E1] bg-[#F4F3F0] p-4 text-xs text-[#1A1A1A]">
-                <p><strong className="text-[#4A4A4A]">Name:</strong> {form.agent_name}</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">License:</strong> {form.agent_license} ({form.license_state})</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">Brokerage:</strong> {form.brokerage_name}</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">Signature:</strong> {form.agent_signature}</p>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => setStep(2)} className="flex-1 rounded-xl border border-[#E8E6E1] py-2 text-xs font-semibold text-[#4A4A4A]">Back</button>
-                <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-xs font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">{submitting ? 'Submitting…' : 'Submit for verification'}</button>
+                <button type="button" onClick={handleSubmit} disabled={submitting || !form.agent_signature.trim() || !form.agent_agreed || !form.client_name.trim()} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-xs font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">{submitting ? 'Submitting…' : 'Submit for verification'}</button>
               </div>
             </div>
           )}
@@ -372,10 +383,10 @@ export default function SellVerifyPage() {
             </div>
           )}
 
-          {step === 2 && (
+          {step === 2 && !isAgent && (
             <div className="space-y-4">
               <h2 className="text-sm font-semibold text-[#1A1A1A]">Property ownership</h2>
-              <p className="text-xs text-[#4A4A4A]">Upload a document showing you own or are authorized to list this property (tax bill, mortgage statement, title, or utility bill).</p>
+              <p className="text-xs text-[#4A4A4A]">Upload a document showing you own or are authorized to list this property.</p>
               <div>
                 <label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-[#4A4A4A]">Property address</label>
                 <input value={form.ownership_address} onChange={(e) => setForm((f) => ({ ...f, ownership_address: e.target.value }))} className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm" placeholder="Street" />
@@ -386,7 +397,15 @@ export default function SellVerifyPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-[#4A4A4A]">Upload document (tax bill, mortgage, title, or utility)</label>
+                <label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-[#4A4A4A]">Document type</label>
+                <select value={form.ownership_doc_type} onChange={(e) => setForm((f) => ({ ...f, ownership_doc_type: e.target.value }))} className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A]">
+                  {OWNERSHIP_DOC_TYPES.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-[#4A4A4A]">Upload document</label>
                 <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#E8E6E1] bg-[#F4F3F0] px-4 py-6 text-center text-xs text-[#4A4A4A] hover:border-[#1B4332]">
                   <input type="file" accept="image/*,.pdf" onChange={handleOwnershipDoc} className="hidden" />
                   {form.ownership_doc_url ? <span className="text-[#1B4332]">✓ Uploaded</span> : <>Drag and drop or click to upload</>}
@@ -399,7 +418,7 @@ export default function SellVerifyPage() {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 3 && !isAgent && (
             <div className="space-y-4">
               <h2 className="text-sm font-semibold text-[#1A1A1A]">Listing agreement</h2>
               <ul className="list-inside list-disc space-y-1 text-xs text-[#1A1A1A]">
@@ -413,41 +432,23 @@ export default function SellVerifyPage() {
               </div>
               <label className="flex cursor-pointer items-start gap-3">
                 <input type="checkbox" checked={form.agreedToTerms} onChange={(e) => setForm((f) => ({ ...f, agreedToTerms: e.target.checked }))} className="mt-0.5 h-4 w-4 rounded border-[#E8E6E1] text-[#1B4332]" />
-                <span className="text-xs text-[#1A1A1A]">I agree to the terms above and the platform listing agreement.</span>
+                <span className="text-xs text-[#1A1A1A]">I agree to HomeBase Seller Terms.</span>
               </label>
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => setStep(2)} className="flex-1 rounded-xl border border-[#E8E6E1] py-2 text-xs font-semibold text-[#4A4A4A]">Back</button>
-                <button type="button" onClick={() => setStep(4)} disabled={!form.signature.trim() || !form.agreedToTerms} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-xs font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">Continue</button>
+                <button type="button" onClick={handleSubmit} disabled={submitting || !form.signature.trim() || !form.agreedToTerms} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-xs font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">{submitting ? 'Submitting…' : 'Submit for verification'}</button>
               </div>
             </div>
           )}
 
-          {step === 4 && (
-            <div className="space-y-4">
-              <h2 className="text-sm font-semibold text-[#1A1A1A]">Review and submit</h2>
-              <div className="rounded-xl border border-[#E8E6E1] bg-[#F4F3F0] p-4 text-xs text-[#1A1A1A]">
-                <p><strong className="text-[#4A4A4A]">Name:</strong> {form.full_name}</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">Address:</strong> {addressString || '\u2014'}</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">Property:</strong> {ownershipAddressString || '\u2014'}</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">ID:</strong> ✓</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">Ownership doc:</strong> ✓</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">Signature:</strong> {form.signature}</p>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => setStep(3)} className="flex-1 rounded-xl border border-[#E8E6E1] py-2 text-xs font-semibold text-[#4A4A4A]">Back</button>
-                <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-xs font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">{submitting ? 'Submitting…' : 'Submit for verification'}</button>
-              </div>
-            </div>
-          )}
-
-          {((!isAgent && step === 5) || (isAgent && step === 4)) && (
+          {((!isAgent && step === 4) || (isAgent && step === 3)) && (
             <div className="space-y-4 text-center">
               <div className="flex justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1B4332]/15 text-3xl text-[#1B4332]">✓</div>
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#D1FAE5] text-3xl text-[#065F46]">✓</div>
               </div>
               <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-[#1A1A1A]">Verification submitted</h2>
-              <p className="text-sm text-[#4A4A4A]">We&apos;ll review your {isAgent ? 'agent' : 'seller'} verification within 1 business day. You&apos;ll receive an email when you can list.</p>
-              <Link href={isAgent ? '/sell/list?type=agent' : '/sell/list?type=fsbo'} className="mt-4 inline-block w-full rounded-xl bg-[#1B4332] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2D5A47]">Continue to list</Link>
+              <p className="text-sm text-[#4A4A4A]">We&apos;ll review within 1 business day.</p>
+              <Link href={isAgent ? '/sell/list?type=agent' : '/sell/list?type=fsbo'} className="mt-4 inline-block w-full rounded-xl bg-[#1B4332] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2D5A47]">Back to listing</Link>
               <Link href="/sell" className="mt-2 inline-block w-full rounded-xl border border-[#E8E6E1] py-2.5 text-sm font-medium text-[#4A4A4A]">Back to Sell</Link>
             </div>
           )}

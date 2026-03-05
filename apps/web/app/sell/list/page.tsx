@@ -7,7 +7,7 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 
 type SellerVerificationStatus = 'loading' | 'approved' | 'unverified';
 
-async function ensurePropertyPhotosBucket() {
+async function ensurePropertyPhotosBucket(supabase: ReturnType<typeof getSupabaseClient>) {
   const { error: getErr } = await supabase.storage.getBucket('property-photos');
   if (getErr) {
     await supabase.storage.createBucket('property-photos', { public: true });
@@ -33,7 +33,7 @@ export default function SellListPage() {
   const supabase = getSupabaseClient();
 
   useEffect(() => {
-    ensurePropertyPhotosBucket();
+    ensurePropertyPhotosBucket(supabase);
   }, []);
 
   useEffect(() => {
@@ -367,7 +367,11 @@ export default function SellListPage() {
               )}
               <div className="flex gap-2">
                 <button type="button" onClick={() => setStep(4)} className="flex-1 rounded-xl border border-[#E8E6E1] py-2 text-sm font-semibold text-[#4A4A4A]">Back</button>
-                <button type="button" onClick={handleSubmit} disabled={!form.agreed || submitting || sellerVerification !== 'approved'} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-sm font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">{submitting ? 'Submitting…' : sellerVerification === 'approved' ? 'Submit listing' : 'Verify to publish'}</button>
+                {sellerVerification === 'approved' ? (
+                  <button type="button" onClick={handleSubmit} disabled={!form.agreed || submitting} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-sm font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">{submitting ? 'Submitting…' : 'Submit listing'}</button>
+                ) : (
+                  <Link href={listType === 'agent' ? '/sell/verify?type=agent' : '/sell/verify?type=fsbo'} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-center text-sm font-semibold text-white hover:bg-[#2D5A47]">Verify your identity to publish →</Link>
+                )}
               </div>
             </div>
           )}
