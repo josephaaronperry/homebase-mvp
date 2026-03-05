@@ -119,7 +119,7 @@ export function PropertyDetailContent({ property, similarProperties, propertyUrl
 
   const fmtPrice = property.price ? `$${property.price.toLocaleString()}` : 'Price on request';
   const fullAddress = [property.address, property.city, property.state].filter(Boolean).join(', ');
-  const zip = (property as { zipCode?: string; zip_code?: string }).zipCode ?? (property as { zip_code?: string }).zip_code;
+  const zip = (property as { zipCode?: string; zipCode?: string }).zipCode ?? (property as { zipCode?: string }).zipCode;
   const cityStateZip = [property.city, property.state, zip].filter(Boolean).join(' ');
 
   const agentCost = property.price != null ? Math.round(property.price * 0.03) : 0;
