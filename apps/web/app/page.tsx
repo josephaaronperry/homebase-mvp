@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { supabase } from '@/lib/supabase';
 import { PropertyCard } from '@/components/PropertyCard';
 import { SavingsCalculator } from '@/components/SavingsCalculator';
@@ -26,15 +27,18 @@ function getDisplayImage(p: Property): string | null {
 }
 
 async function getNewestActiveProperties(): Promise<Property[]> {
-  const { data: featuredProperties } = await supabase
+  const supabaseClient = await getSupabaseServerClient();
+  const { data, error } = await supabaseClient
     .from('properties')
-    .select('id, title, address, city, state, price, bedrooms, bathrooms, sqft, imageUrl, image_url, images, featured')
+    .select('id, title, address, city, state, price, bedrooms, bathrooms, sqft, image_url, images, featured')
     .eq('status', 'ACTIVE')
-    .order('createdAt', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(4);
   // eslint-disable-next-line no-console
-  console.log('[Homepage] featuredProperties:', JSON.stringify(featuredProperties?.map((p: Property) => ({ id: p.id, address: p.address, image: p.image_url }))));
-  return (featuredProperties ?? []) as Property[];
+  console.log('[Homepage] properties query error:', error);
+  // eslint-disable-next-line no-console
+  console.log('[Homepage] properties data:', JSON.stringify(data?.map((p: Property) => ({ id: p.id, address: p.address, image: p.image_url }))));
+  return (data ?? []) as Property[];
 }
 
 async function getListingCount(): Promise<number> {
