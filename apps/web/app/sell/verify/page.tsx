@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -32,7 +32,7 @@ const OWNERSHIP_DOC_TYPES = [
   { value: 'utility_bill', label: 'Utility bill at this address' },
 ];
 
-export default function SellVerifyPage() {
+function SellVerifyPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const verifyType = searchParams.get('type') === 'agent' ? 'agent' : 'fsbo';
@@ -455,5 +455,13 @@ export default function SellVerifyPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function SellVerifyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center"><div className="w-8 h-8 rounded-full border-2 border-[#1B4332] border-t-transparent animate-spin" /></div>}>
+      <SellVerifyPageInner />
+    </Suspense>
   );
 }
