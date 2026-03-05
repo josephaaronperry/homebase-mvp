@@ -118,12 +118,14 @@ const TESTIMONIALS = [
 ];
 
 export default async function HomePage() {
-  const [newestActive, listingCount] = await Promise.all([
-    getNewestActiveProperties(),
-    getListingCount(),
-  ]);
-  const heroPhotos = newestActive.slice(0, 3);
-  const featuredGrid = newestActive;
+  const featuredProperties = await getNewestActiveProperties();
+  const listingCount = await getListingCount();
+  const heroPhotos = featuredProperties.slice(0, 3);
+
+  // eslint-disable-next-line no-console
+  console.log('[Render] featuredProperties count:', featuredProperties.length);
+  // eslint-disable-next-line no-console
+  console.log('[Render] heroPhotos count:', heroPhotos.length);
 
   return (
     <>
@@ -265,8 +267,8 @@ export default async function HomePage() {
             Homes for sale right now
           </h2>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredGrid.length > 0
-              ? featuredGrid.map((property) => {
+            {featuredProperties.length > 0
+              ? featuredProperties.map((property) => {
                   try {
                     return (
                       <PropertyCard
@@ -297,7 +299,7 @@ export default async function HomePage() {
                 })
               : null}
           </div>
-          {featuredGrid.length === 0 && (
+          {featuredProperties.length === 0 && (
             <p className="mt-4 font-body text-[var(--color-text-muted)]">
               No listings yet. Check back soon.
             </p>
