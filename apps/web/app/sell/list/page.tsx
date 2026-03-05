@@ -7,6 +7,8 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 
 const supabase = getSupabaseClient();
 
+type SellerVerificationStatus = 'loading' | 'approved' | 'unverified';
+
 async function ensurePropertyPhotosBucket() {
   const { error: getErr } = await supabase.storage.getBucket('property-photos');
   if (getErr) {
@@ -27,9 +29,29 @@ export default function SellListPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [submitting, setSubmitting] = useState(false);
+  const [sellerVerification, setSellerVerification] = useState<SellerVerificationStatus>('loading');
 
   useEffect(() => {
     ensurePropertyPhotosBucket();
+  }, []);
+
+  useEffect(() => {
+    const checkSellerVerification = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setSellerVerification('unverified');
+        return;
+      }
+      const { data: submissions } = await supabase
+        .from('kyc_submissions')
+        .select('id, status, submission_type')
+        .eq('user_id', user.id)
+        .order('submitted_at', { ascending: false })
+        .limit(10);
+      const sellerApproved = submissions?.some((s) => (s as { submission_type?: string }).submission_type === 'seller' && s.status === 'APPROVED');
+      setSellerVerification(sellerApproved ? 'approved' : 'unverified');
+    };
+    checkSellerVerification();
   }, []);
 
   const [form, setForm] = useState({
@@ -156,104 +178,111 @@ export default function SellListPage() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
+    <div className="flex min-h-screen flex-col bg-[#FAFAF8] text-[#1A1A1A]">
       <main className="mx-auto w-full max-w-xl flex-1 px-4 py-8">
-        <Link href="/sell" className="mb-6 inline-block text-xs font-medium text-slate-400 hover:text-emerald-400">← Sell</Link>
-        <h1 className="text-2xl font-semibold text-slate-50">List your home</h1>
+        <Link href="/sell" className="mb-6 inline-block text-xs font-medium text-[#4A4A4A] hover:text-[#52B788]">← Sell</Link>
+        {sellerVerification === 'unverified' && (
+          <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <p className="font-medium">Verify your identity to publish your listing.</p>
+            <p className="mt-1 text-xs">Complete seller verification to list your home on the marketplace.</p>
+            <Link href="/sell/verify" className="mt-3 inline-block font-semibold text-amber-700 hover:text-amber-900">Verify now →</Link>
+          </div>
+        )}
+        <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold text-[#1A1A1A]">List your home</h1>
         <div className="mt-6 flex gap-2">
           {steps.map(({ n, label }) => (
-            <button key={n} type="button" onClick={() => setStep(n)} className={`flex-1 rounded-lg py-1.5 text-xs font-medium ${step === n ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800/60 text-slate-500'}`}>{label}</button>
+            <button key={n} type="button" onClick={() => setStep(n)} className={`flex-1 rounded-lg py-1.5 text-xs font-medium ${step === n ? 'bg-[#1B4332] text-white' : 'bg-[#F4F3F0] text-[#4A4A4A]'}`}>{label}</button>
           ))}
         </div>
-        <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950/80 p-6">
+        <div className="mt-8 rounded-2xl border border-[#E8E6E1] bg-white p-6 shadow-sm">
           {step === 1 && (
             <div className="space-y-4">
-              <h2 className="text-sm font-semibold text-slate-50">Property basics</h2>
-              <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="Street address" className="h-10 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-50 placeholder:text-slate-500" />
+              <h2 className="text-sm font-semibold text-[#1A1A1A]">Property basics</h2>
+              <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="Street address" className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A] placeholder:text-[#888888]" />
               <div className="grid grid-cols-3 gap-2">
-                <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="City" className="h-10 rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-50 placeholder:text-slate-500" />
-                <input value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))} placeholder="State" className="h-10 rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-50 placeholder:text-slate-500" />
-                <input value={form.zipCode} onChange={(e) => setForm((f) => ({ ...f, zipCode: e.target.value }))} placeholder="ZIP" className="h-10 rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-50 placeholder:text-slate-500" />
+                <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="City" className="h-10 rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A] placeholder:text-[#888888]" />
+                <input value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))} placeholder="State" className="h-10 rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A] placeholder:text-[#888888]" />
+                <input value={form.zipCode} onChange={(e) => setForm((f) => ({ ...f, zipCode: e.target.value }))} placeholder="ZIP" className="h-10 rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A] placeholder:text-[#888888]" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-400">Property type</label>
+                <label className="mb-1 block text-xs font-medium text-[#4A4A4A]">Property type</label>
                 <div className="grid grid-cols-2 gap-2">
                   {PROPERTY_TYPES.map((t) => (
-                    <button key={t.value} type="button" onClick={() => setForm((f) => ({ ...f, propertyType: t.value }))} className={`rounded-xl border px-3 py-2 text-sm ${form.propertyType === t.value ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300' : 'border-slate-800 text-slate-300'}`}>{t.label}</button>
+                    <button key={t.value} type="button" onClick={() => setForm((f) => ({ ...f, propertyType: t.value }))} className={`rounded-xl border px-3 py-2 text-sm ${form.propertyType === t.value ? 'border-[#1B4332] bg-[#1B4332]/15 text-[#1B4332]' : 'border-[#E8E6E1] text-[#4A4A4A]'}`}>{t.label}</button>
                   ))}
                 </div>
               </div>
-              <button type="button" onClick={() => setStep(2)} disabled={!form.address || !form.city || !form.state} className="w-full rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50">Continue</button>
+              <button type="button" onClick={() => setStep(2)} disabled={!form.address || !form.city || !form.state} className="w-full rounded-xl bg-[#1B4332] py-2.5 text-sm font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">Continue</button>
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-4">
-              <h2 className="text-sm font-semibold text-slate-50">Property details</h2>
+              <h2 className="text-sm font-semibold text-[#1A1A1A]">Property details</h2>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-400">Bedrooms (1–10)</label>
+                <label className="mb-1 block text-xs font-medium text-[#4A4A4A]">Bedrooms (1–10)</label>
                 <div className="flex gap-2">
                   {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <button key={n} type="button" onClick={() => setForm((f) => ({ ...f, bedrooms: n }))} className={`h-10 w-10 rounded-xl border text-sm font-medium ${form.bedrooms === n ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300' : 'border-slate-800 text-slate-300'}`}>{n}</button>
+                    <button key={n} type="button" onClick={() => setForm((f) => ({ ...f, bedrooms: n }))} className={`h-10 w-10 rounded-xl border text-sm font-medium ${form.bedrooms === n ? 'border-[#1B4332] bg-[#1B4332]/15 text-[#1B4332]' : 'border-[#E8E6E1] text-[#4A4A4A]'}`}>{n}</button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-400">Bathrooms (1–10)</label>
+                <label className="mb-1 block text-xs font-medium text-[#4A4A4A]">Bathrooms (1–10)</label>
                 <div className="flex gap-2 flex-wrap">
                   {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <button key={n} type="button" onClick={() => setForm((f) => ({ ...f, bathrooms: n }))} className={`h-10 w-10 rounded-xl border text-sm font-medium ${form.bathrooms === n ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300' : 'border-slate-800 text-slate-300'}`}>{n}</button>
+                    <button key={n} type="button" onClick={() => setForm((f) => ({ ...f, bathrooms: n }))} className={`h-10 w-10 rounded-xl border text-sm font-medium ${form.bathrooms === n ? 'border-[#1B4332] bg-[#1B4332]/15 text-[#1B4332]' : 'border-[#E8E6E1] text-[#4A4A4A]'}`}>{n}</button>
                   ))}
                 </div>
               </div>
-              <input type="number" min={1} value={form.sqft} onChange={(e) => setForm((f) => ({ ...f, sqft: e.target.value }))} placeholder="Square footage" className="h-10 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-50 placeholder:text-slate-500" />
-              <input type="number" min={1800} max={new Date().getFullYear() + 1} value={form.yearBuilt} onChange={(e) => setForm((f) => ({ ...f, yearBuilt: e.target.value }))} placeholder="Year built" className="h-10 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-50 placeholder:text-slate-500" />
-              <input type="number" min={0} value={form.lotSize} onChange={(e) => setForm((f) => ({ ...f, lotSize: e.target.value }))} placeholder="Lot size (sqft, optional)" className="h-10 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-50 placeholder:text-slate-500" />
+              <input type="number" min={1} value={form.sqft} onChange={(e) => setForm((f) => ({ ...f, sqft: e.target.value }))} placeholder="Square footage" className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A] placeholder:text-[#888888]" />
+              <input type="number" min={1800} max={new Date().getFullYear() + 1} value={form.yearBuilt} onChange={(e) => setForm((f) => ({ ...f, yearBuilt: e.target.value }))} placeholder="Year built" className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A] placeholder:text-[#888888]" />
+              <input type="number" min={0} value={form.lotSize} onChange={(e) => setForm((f) => ({ ...f, lotSize: e.target.value }))} placeholder="Lot size (sqft, optional)" className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A] placeholder:text-[#888888]" />
               <div className="flex gap-2">
-                <button type="button" onClick={() => setStep(1)} className="flex-1 rounded-xl border border-slate-700 py-2 text-sm font-semibold text-slate-300">Back</button>
-                <button type="button" onClick={() => setStep(3)} disabled={!form.sqft} className="flex-1 rounded-xl bg-emerald-500 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50">Continue</button>
+                <button type="button" onClick={() => setStep(1)} className="flex-1 rounded-xl border border-[#E8E6E1] py-2 text-sm font-semibold text-[#4A4A4A]">Back</button>
+                <button type="button" onClick={() => setStep(3)} disabled={!form.sqft} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-sm font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">Continue</button>
               </div>
             </div>
           )}
 
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="text-sm font-semibold text-slate-50">Pricing & description</h2>
+              <h2 className="text-sm font-semibold text-[#1A1A1A]">Pricing & description</h2>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-400">Asking price</label>
-                <input type="text" inputMode="numeric" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') }))} placeholder="500,000" className="h-10 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-50 placeholder:text-slate-500" />
+                <label className="mb-1 block text-xs font-medium text-[#4A4A4A]">Asking price</label>
+                <input type="text" inputMode="numeric" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') }))} placeholder="500,000" className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A] placeholder:text-[#888888]" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-400">Description (min 50 characters)</label>
-                <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={4} placeholder="Describe your home..." className="w-full rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500" />
-                <p className="mt-1 text-[11px] text-slate-500">{form.description.length} characters</p>
+                <label className="mb-1 block text-xs font-medium text-[#4A4A4A]">Description (min 50 characters)</label>
+                <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={4} placeholder="Describe your home..." className="w-full rounded-xl border border-[#E8E6E1] bg-white px-3 py-2 text-sm text-[#1A1A1A] placeholder:text-[#888888]" />
+                <p className="mt-1 text-[11px] text-[#1A1A1A]0">{form.description.length} characters</p>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-400">Highlights (up to 5)</label>
+                <label className="mb-1 block text-xs font-medium text-[#4A4A4A]">Highlights (up to 5)</label>
                 <div className="flex gap-2">
-                  <input value={form.highlightInput} onChange={(e) => setForm((f) => ({ ...f, highlightInput: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addHighlight())} placeholder="Add a highlight" className="h-10 flex-1 rounded-xl border border-slate-800 bg-slate-900 px-3 text-sm text-slate-50 placeholder:text-slate-500" />
-                  <button type="button" onClick={addHighlight} disabled={form.highlights.length >= 5 || !form.highlightInput.trim()} className="rounded-xl border border-slate-700 px-3 text-sm font-medium text-slate-300 disabled:opacity-50">Add</button>
+                  <input value={form.highlightInput} onChange={(e) => setForm((f) => ({ ...f, highlightInput: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addHighlight())} placeholder="Add a highlight" className="h-10 flex-1 rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A] placeholder:text-[#888888]" />
+                  <button type="button" onClick={addHighlight} disabled={form.highlights.length >= 5 || !form.highlightInput.trim()} className="rounded-xl border border-[#E8E6E1] px-3 text-sm font-medium text-[#4A4A4A] disabled:opacity-50">Add</button>
                 </div>
                 <ul className="mt-2 space-y-1">
                   {form.highlights.map((h, i) => (
-                    <li key={i} className="flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-1.5 text-sm">
-                      <span className="text-slate-200">• {h}</span>
+                    <li key={i} className="flex items-center justify-between rounded-lg bg-[#F4F3F0] px-3 py-1.5 text-sm text-[#1A1A1A]">
+                      <span className="text-[#1A1A1A]">• {h}</span>
                       <button type="button" onClick={() => removeHighlight(i)} className="text-rose-400 text-xs">Remove</button>
                     </li>
                   ))}
                 </ul>
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setStep(2)} className="flex-1 rounded-xl border border-slate-700 py-2 text-sm font-semibold text-slate-300">Back</button>
-                <button type="button" onClick={() => setStep(4)} disabled={!form.price || form.description.length < 50} className="flex-1 rounded-xl bg-emerald-500 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50">Continue</button>
+                <button type="button" onClick={() => setStep(2)} className="flex-1 rounded-xl border border-[#E8E6E1] py-2 text-sm font-semibold text-[#4A4A4A]">Back</button>
+                <button type="button" onClick={() => setStep(4)} disabled={!form.price || form.description.length < 50} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-sm font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">Continue</button>
               </div>
             </div>
           )}
 
           {step === 4 && (
             <div className="space-y-4">
-              <h2 className="text-sm font-semibold text-slate-50">Photos (up to 10)</h2>
-              <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/50 px-4 py-6 text-center text-xs text-slate-400 hover:border-emerald-500/60">
+              <h2 className="text-sm font-semibold text-[#1A1A1A]">Photos (up to 10)</h2>
+              <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#E8E6E1] bg-[#F4F3F0] px-4 py-6 text-center text-xs text-[#4A4A4A] hover:border-[#1B4332]">
                 <input type="file" accept="image/*" multiple onChange={handlePhotoChange} className="hidden" />
                 {form.photoUrls.length}/10 photos — click to add
               </label>
@@ -267,33 +296,33 @@ export default function SellListPage() {
                 ))}
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setStep(3)} className="flex-1 rounded-xl border border-slate-700 py-2 text-sm font-semibold text-slate-300">Back</button>
-                <button type="button" onClick={() => setStep(5)} className="flex-1 rounded-xl bg-emerald-500 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400">Continue</button>
+                <button type="button" onClick={() => setStep(3)} className="flex-1 rounded-xl border border-[#E8E6E1] py-2 text-sm font-semibold text-[#4A4A4A]">Back</button>
+                <button type="button" onClick={() => setStep(5)} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-sm font-semibold text-white hover:bg-[#2D5A47]">Continue</button>
               </div>
             </div>
           )}
 
           {step === 5 && (
             <div className="space-y-4">
-              <h2 className="text-sm font-semibold text-slate-50">Review & submit</h2>
-              <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-sm text-slate-200 space-y-1">
-                <p className="font-medium text-slate-50">{form.address}, {form.city}, {form.state} {form.zipCode}</p>
+              <h2 className="text-sm font-semibold text-[#1A1A1A]">Review & submit</h2>
+              <div className="rounded-xl border border-[#E8E6E1] bg-white/50 p-4 text-sm text-[#1A1A1A] space-y-1">
+                <p className="font-medium text-[#1A1A1A]">{form.address}, {form.city}, {form.state} {form.zipCode}</p>
                 <p>${form.price} • {form.bedrooms} bd, {form.bathrooms} ba, {form.sqft} sqft</p>
-                <p className="text-xs text-slate-400 line-clamp-2">{form.description}</p>
-                <p className="text-xs text-slate-500">{form.photoUrls.length} photos</p>
+                <p className="text-xs text-[#4A4A4A] line-clamp-2">{form.description}</p>
+                <p className="text-xs text-[#1A1A1A]0">{form.photoUrls.length} photos</p>
               </div>
               <label className="flex cursor-pointer items-start gap-3">
-                <input type="checkbox" checked={form.agreed} onChange={(e) => setForm((f) => ({ ...f, agreed: e.target.checked }))} className="mt-0.5 h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500" />
-                <span className="text-xs text-slate-300">I agree to the listing terms.</span>
+                <input type="checkbox" checked={form.agreed} onChange={(e) => setForm((f) => ({ ...f, agreed: e.target.checked }))} className="mt-0.5 h-4 w-4 rounded border-[#E8E6E1] text-[#1B4332]" />
+                <span className="text-xs text-[#4A4A4A]">I agree to the listing terms.</span>
               </label>
               {submitError && (
-                <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100" role="alert">
+                <div className="rounded-xl border border-rose-400 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">
                   {submitError}
                 </div>
               )}
               <div className="flex gap-2">
-                <button type="button" onClick={() => setStep(4)} className="flex-1 rounded-xl border border-slate-700 py-2 text-sm font-semibold text-slate-300">Back</button>
-                <button type="button" onClick={handleSubmit} disabled={!form.agreed || submitting} className="flex-1 rounded-xl bg-emerald-500 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50">{submitting ? 'Submitting…' : 'Submit listing'}</button>
+                <button type="button" onClick={() => setStep(4)} className="flex-1 rounded-xl border border-[#E8E6E1] py-2 text-sm font-semibold text-[#4A4A4A]">Back</button>
+                <button type="button" onClick={handleSubmit} disabled={!form.agreed || submitting || sellerVerification !== 'approved'} className="flex-1 rounded-xl bg-[#1B4332] py-2 text-sm font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">{submitting ? 'Submitting…' : sellerVerification === 'approved' ? 'Submit listing' : 'Verify to publish'}</button>
               </div>
             </div>
           )}

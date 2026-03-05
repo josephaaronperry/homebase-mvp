@@ -44,6 +44,7 @@ type KycRow = {
   id: string;
   user_id: string;
   status: string;
+  submission_type: string | null;
   full_name: string | null;
   submitted_at: string | null;
   created_at: string | null;
@@ -76,6 +77,9 @@ export default function AdminPage() {
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [offers, setOffers] = useState<OfferRow[]>([]);
   const [kyc, setKyc] = useState<KycRow[]>([]);
+  const [kycStatusFilter, setKycStatusFilter] = useState<'all' | 'PENDING' | 'APPROVED' | 'REJECTED'>('all');
+  const [rejectModal, setRejectModal] = useState<{ id: string; user_id: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
   const [deals, setDeals] = useState<DealRow[]>([]);
 
   useEffect(() => {
@@ -140,7 +144,7 @@ export default function AdminPage() {
             const { data: kp } = await supabase.from('users').select('id, email').in('id', kycUserIds);
             (kp ?? []).forEach((p: { id: string; email: string | null }) => { kycProfileMap.set(p.id, p.email ?? ''); });
           }
-          setKyc(kycList.map((k) => ({ ...k, user_email: kycProfileMap.get(k.user_id) ?? null })));
+          setKyc(kycList.map((k) => ({ ...k, submission_type: (k as { submission_type?: string }).submission_type ?? 'buyer', user_email: kycProfileMap.get(k.user_id) ?? null })));
         }
 
         const dealsRes = await supabase.from('deals').select('id, property_id, buyer_id, seller_id, agreed_price, status, lender_id, created_at').order('created_at', { ascending: false });
@@ -201,9 +205,17 @@ export default function AdminPage() {
     }
   };
 
-  const updateKyc = async (id: string, status: 'APPROVED' | 'REJECTED', userId: string) => {
-    await supabase.from('kyc_submissions').update({ status, reviewed_at: new Date().toISOString() }).eq('id', id);
+  const updateKyc = async (id: string, status: 'APPROVED' | 'REJECTED', userId: string, reviewerNotes?: string) => {
+    const payload: { status: string; reviewed_at: string; reviewer_notes?: string } = { status, reviewed_at: new Date().toISOString() };
+    if (reviewerNotes != null) payload.reviewer_notes = reviewerNotes;
+    const { error } = await supabase.from('kyc_submissions').update(payload).eq('id', id);
+    if (error) {
+      setError(error.message);
+      return;
+    }
     setKyc((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    setRejectModal(null);
+    setRejectReason('');
     if (status === 'APPROVED' && userId) {
       try {
         await fetch('/api/notifications/create', {
@@ -215,6 +227,21 @@ export default function AdminPage() {
             title: 'Identity verified',
             body: 'Your identity has been verified. You can now make offers.',
             link: '/dashboard',
+          }),
+        });
+      } catch {}
+    }
+    if (status === 'REJECTED' && userId) {
+      try {
+        await fetch('/api/notifications/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            type: 'kyc_rejected',
+            title: 'Verification not approved',
+            body: reviewerNotes ? `Your verification was not approved. Reason: ${reviewerNotes}` : 'Your verification was not approved. Please contact support or resubmit.',
+            link: '/verify',
           }),
         });
       } catch {}
@@ -332,24 +359,73 @@ export default function AdminPage() {
         )}
 
         {activeTab === 'kyc' && (
-          <div className="mt-6 space-y-3">
-            {kyc.length === 0 ? (
+          <div className="mt-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">Filter:</span>
+              {(['all', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setKycStatusFilter(f)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${kycStatusFilter === f ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                >
+                  {f === 'all' ? 'All' : f.charAt(0) + f.slice(1).toLowerCase()}
+                </button>
+              ))}
+            </div>
+            {kyc.filter((r) => kycStatusFilter === 'all' || r.status === kycStatusFilter).length === 0 ? (
               <p className="rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center text-slate-400">No KYC submissions.</p>
             ) : (
-              kyc.map((r) => (
-                <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3">
-                  <div>
-                    <div className="text-sm font-medium text-slate-100">{r.full_name ?? r.id}</div>
-                    <div className="text-xs text-slate-500">{r.user_email ?? r.user_id} • {r.status} • {r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[700px] border-collapse text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-700 text-slate-400">
+                      <th className="py-2 pr-2 font-semibold">Submission ID</th>
+                      <th className="py-2 pr-2 font-semibold">User email</th>
+                      <th className="py-2 pr-2 font-semibold">Type</th>
+                      <th className="py-2 pr-2 font-semibold">Status</th>
+                      <th className="py-2 pr-2 font-semibold">Submitted</th>
+                      <th className="py-2 pr-2 font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {kyc.filter((r) => kycStatusFilter === 'all' || r.status === kycStatusFilter).map((r) => (
+                      <tr key={r.id} className="border-b border-slate-800/80">
+                        <td className="py-2 pr-2 font-mono text-xs text-slate-300">{r.id.slice(0, 8)}</td>
+                        <td className="py-2 pr-2 text-slate-200">{r.user_email ?? r.user_id.slice(0, 8)}</td>
+                        <td className="py-2 pr-2 text-slate-300">{r.submission_type === 'seller' ? 'Seller' : 'Buyer'}</td>
+                        <td className="py-2 pr-2">
+                          <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${r.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-300' : r.status === 'REJECTED' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                            {r.status}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-2 text-slate-500 text-xs">{r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-2 pr-2">
+                          {r.status === 'PENDING' && (
+                            <div className="flex gap-2">
+                              <button type="button" onClick={() => updateKyc(r.id, 'APPROVED', r.user_id)} className="rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30">Approve</button>
+                              <button type="button" onClick={() => setRejectModal({ id: r.id, user_id: r.user_id })} className="rounded-lg bg-rose-500/20 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/30">Reject</button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {rejectModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog">
+                <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-xl">
+                  <h3 className="text-lg font-semibold text-slate-100">Reject verification</h3>
+                  <p className="mt-1 text-sm text-slate-400">Optionally provide a reason (user will be notified):</p>
+                  <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3} placeholder="Reason for rejection..." className="mt-3 w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500" />
+                  <div className="mt-4 flex gap-2">
+                    <button type="button" onClick={() => { setRejectModal(null); setRejectReason(''); }} className="flex-1 rounded-xl border border-slate-600 py-2 text-sm font-semibold text-slate-300">Cancel</button>
+                    <button type="button" onClick={() => rejectModal && updateKyc(rejectModal.id, 'REJECTED', rejectModal.user_id, rejectReason.trim() || undefined)} className="flex-1 rounded-xl bg-rose-500/20 py-2 text-sm font-semibold text-rose-300 hover:bg-rose-500/30">Reject</button>
                   </div>
-                  {r.status === 'PENDING' && (
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => updateKyc(r.id, 'APPROVED', r.user_id)} className="rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30">Approve</button>
-                      <button type="button" onClick={() => updateKyc(r.id, 'REJECTED', r.user_id)} className="rounded-lg bg-rose-500/20 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/30">Reject</button>
-                    </div>
-                  )}
                 </div>
-              ))
+              </div>
             )}
           </div>
         )}

@@ -71,42 +71,42 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-3rem)] flex-1 items-center justify-center bg-slate-950">
-      <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-950/80 p-6 shadow-2xl shadow-black/40">
+    <div className="flex min-h-[calc(100vh-3rem)] flex-1 items-center justify-center bg-[#FAFAF8]">
+      <div className="w-full max-w-md rounded-3xl border border-[#E8E6E1] bg-white p-6 shadow-sm">
         <div className="mb-6 text-center">
           <Link
             href="/"
-            className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-400"
+            className="text-sm font-semibold uppercase tracking-[0.3em] text-[#52B788]"
           >
             HomeBase
           </Link>
-          <h1 className="mt-3 text-2xl font-semibold text-slate-50">
-            Create your account
+          <h1 className="mt-3 font-[family-name:var(--font-display)] text-2xl font-semibold text-[#1A1A1A]">
+            Create your account.
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-[#4A4A4A]">
             Save homes, track offers, and stay ahead of the market.
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-xs text-rose-100">
+          <div className="mb-4 rounded-2xl border border-rose-400 bg-rose-50 px-4 py-3 text-xs text-rose-800">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="mb-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+          <div className="mb-4 rounded-2xl border border-[#1B4332]/30 bg-[#1B4332]/10 px-4 py-3 text-sm text-[#1B4332]">
             Check your email — we sent you a confirmation link. Click it to activate your account, then sign in.
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-sm">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-200">
+            <label className="mb-1 block text-xs font-medium text-[#1A1A1A]">
               Full name
             </label>
             <input
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none ring-emerald-500/60 focus:border-emerald-500/60"
+              className="w-full rounded-xl border border-[#E8E6E1] bg-white px-3 py-2 text-sm text-[#1A1A1A] outline-none focus:border-[#1B4332] focus:ring-1 focus:ring-[#52B788]/40"
               required
               value={form.fullName}
               onChange={(e) =>
@@ -116,11 +116,11 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-200">
+            <label className="mb-1 block text-xs font-medium text-[#1A1A1A]">
               Email
             </label>
             <input
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none ring-emerald-500/60 focus:border-emerald-500/60"
+              className="w-full rounded-xl border border-[#E8E6E1] bg-white px-3 py-2 text-sm text-[#1A1A1A] outline-none focus:border-[#1B4332] focus:ring-1 focus:ring-[#52B788]/40"
               type="email"
               required
               value={form.email}
@@ -131,11 +131,11 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-200">
+            <label className="mb-1 block text-xs font-medium text-[#1A1A1A]">
               Phone
             </label>
             <input
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none ring-emerald-500/60 focus:border-emerald-500/60"
+              className="w-full rounded-xl border border-[#E8E6E1] bg-white px-3 py-2 text-sm text-[#1A1A1A] outline-none focus:border-[#1B4332] focus:ring-1 focus:ring-[#52B788]/40"
               type="tel"
               value={form.phone}
               onChange={(e) =>
@@ -145,11 +145,11 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-200">
+            <label className="mb-1 block text-xs font-medium text-[#1A1A1A]">
               Password
             </label>
             <input
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none ring-emerald-500/60 focus:border-emerald-500/60"
+              className="w-full rounded-xl border border-[#E8E6E1] bg-white px-3 py-2 text-sm text-[#1A1A1A] outline-none focus:border-[#1B4332] focus:ring-1 focus:ring-[#52B788]/40"
               type="password"
               required
               value={form.password}
@@ -163,23 +163,23 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 w-full rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/40 hover:bg-emerald-400 disabled:opacity-70"
+            className="mt-2 w-full rounded-xl bg-[#1B4332] py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#2D5A47] disabled:opacity-70"
           >
             {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 text-center text-xs text-[#4A4A4A]">
           Already have an account?{' '}
           <Link
             href="/login"
-            className="font-semibold text-emerald-300 hover:text-emerald-200"
+            className="font-semibold text-[#52B788] hover:text-[#1B4332]"
           >
             Sign in
           </Link>
         </p>
-        <p className="mt-4 text-center text-xs text-slate-500">
-          <Link href="/how-it-works" className="text-slate-400 hover:text-emerald-400">
+        <p className="mt-4 text-center text-xs text-[#4A4A4A]">
+          <Link href="/how-it-works" className="hover:text-[#52B788]">
             Learn how HomeBase works
           </Link>
         </p>

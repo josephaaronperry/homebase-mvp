@@ -16,6 +16,12 @@ type Props = {
   address: string | null;
   city: string | null;
   state: string | null;
+  sellerName?: string | null;
+  estMonthly?: number | null;
+  showSave?: boolean;
+  saved?: boolean;
+  onSaveClick?: (e: React.MouseEvent) => void;
+  shareUrl?: string;
 };
 
 export function PropertySidebar({
@@ -24,6 +30,12 @@ export function PropertySidebar({
   address,
   city,
   state,
+  sellerName = 'Private seller',
+  estMonthly = null,
+  showSave = false,
+  saved = false,
+  onSaveClick,
+  shareUrl,
 }: Props) {
   const router = useRouter();
   const [user, setUser] = useState<{ id: string } | null>(null);
@@ -89,25 +101,38 @@ export function PropertySidebar({
 
   return (
     <>
-      <aside className="space-y-4 md:sticky md:top-6">
-        <div className="rounded-2xl border border-slate-900 bg-slate-950/90 p-4 text-xs text-slate-200">
-          <div className="mb-3">
-            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
-              Price
+      <aside className="space-y-4">
+        <div className="rounded-2xl border border-[#E8E6E1] bg-white p-5 text-xs shadow-lg">
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <div>
+              <div className="font-[family-name:var(--font-mono)] text-xl font-bold text-[#1A1A1A]">
+                {fmtPrice}
+              </div>
+              <p className="mt-1 text-[11px] text-[#4A4A4A]">Listed by {sellerName}</p>
             </div>
-            <div className="mt-1 text-2xl font-semibold text-slate-50">
-              {fmtPrice}
-            </div>
-            <div className="mt-1 text-[11px] text-slate-500">
-              Estimated monthly payment shown below.
-            </div>
+            {showSave && (
+              <button
+                type="button"
+                onClick={onSaveClick}
+                className="rounded-full p-2 text-lg hover:bg-[#F4F3F0]"
+                aria-label={saved ? 'Unsave home' : 'Save home'}
+              >
+                {saved ? '❤️' : '🤍'}
+              </button>
+            )}
           </div>
+          {estMonthly != null && (
+            <p className="mb-3 text-sm text-[#4A4A4A]">
+              Est. ${estMonthly.toLocaleString()}/mo
+              <span className="block text-[10px] text-[#888888]">20% down, 30yr fixed at 6.8%</span>
+            </p>
+          )}
 
           <div className="space-y-2">
             <button
               type="button"
               onClick={handleScheduleTourClick}
-              className="w-full rounded-xl bg-emerald-500 px-3 py-2.5 text-xs font-semibold text-slate-950 shadow-md shadow-emerald-500/40 hover:bg-emerald-400"
+              className="w-full rounded-xl bg-[#1B4332] px-3 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#2D5A47]"
             >
               Schedule a Tour
             </button>
@@ -116,8 +141,8 @@ export function PropertySidebar({
               onClick={handleMakeOfferClick}
               className={`w-full rounded-xl px-3 py-2.5 text-xs font-semibold ${
                 isVerified
-                  ? 'border border-emerald-500/60 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
-                  : 'cursor-not-allowed border border-slate-700 bg-slate-900/80 text-slate-500'
+                  ? 'border border-[#1B4332] bg-[#1B4332]/10 text-[#52B788] hover:bg-[#1B4332]/20'
+                  : 'cursor-not-allowed border border-[#E8E6E1] bg-[#F4F3F0] text-[#888888]'
               }`}
               title={!isVerified ? 'Verify your identity to make an offer' : undefined}
             >
@@ -125,8 +150,8 @@ export function PropertySidebar({
             </button>
           </div>
 
-          <form onSubmit={handleSellerSubmit} className="mt-4 space-y-2 border-t border-slate-800 pt-4">
-            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
+          <form onSubmit={handleSellerSubmit} className="mt-4 space-y-2 border-t border-[#E8E6E1] pt-4">
+            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#4A4A4A]">
               Contact seller
             </div>
             <div>
@@ -136,7 +161,7 @@ export function PropertySidebar({
               <textarea
                 id="seller-message"
                 rows={3}
-                className="h-auto w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-50 outline-none ring-emerald-500/60 placeholder:text-slate-500 focus:border-emerald-400"
+                className="h-auto w-full rounded-xl border border-[#E8E6E1] bg-white px-3 py-2 text-xs text-[#1A1A1A] outline-none placeholder:text-[#888888] focus:border-[#1B4332] focus:ring-1 focus:ring-[#52B788]/40"
                 placeholder="Your message to the seller..."
                 value={sellerMessage}
                 onChange={(e) => setSellerMessage(e.target.value)}
@@ -145,14 +170,18 @@ export function PropertySidebar({
             <button
               type="submit"
               disabled={sellerSubmitting}
-              className="w-full rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-700 disabled:opacity-70"
+              className="w-full rounded-xl bg-[#1B4332] px-3 py-2 text-xs font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-70"
             >
               Send message
             </button>
           </form>
-        </div>
 
-        <MortgageCalculator price={price ?? 0} />
+          <div className="mt-4 flex flex-wrap gap-3 border-t border-[#E8E6E1] pt-4 text-[11px] text-[#4A4A4A]">
+            <span>🔒 Verified listing</span>
+            <span>✓ No agent fees</span>
+            <span>📋 Guided closing</span>
+          </div>
+        </div>
       </aside>
 
       {tourModalOpen && user && (

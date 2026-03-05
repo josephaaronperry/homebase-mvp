@@ -21,7 +21,7 @@ type SavedPreview = {
   bedrooms: number | null;
   bathrooms: number | null;
   sqft: number | null;
-  imageUrl: string | null;
+  image_url: string | null;
   title: string | null;
 };
 
@@ -50,7 +50,7 @@ type ViewedProperty = {
   city: string | null;
   state: string | null;
   price: number | null;
-  imageUrl: string | null;
+  image_url: string | null;
 };
 
 type PipelinePreview = {
@@ -171,12 +171,12 @@ export default function DashboardPage() {
         const propertyIds = savedRows.map((r) => r.propertyId);
         const { data: props } = await supabase
           .from('properties')
-          .select('id, price, address, city, state, bedrooms, bathrooms, sqft, imageUrl, title')
+          .select('id, price, address, city, state, bedrooms, bathrooms, sqft, image_url, title')
           .in('id', propertyIds);
-        const propMap = new Map((props ?? []).map((p: { id: string; price: number | null; address: string | null; city: string | null; state: string | null; bedrooms: number | null; bathrooms: number | null; sqft: number | null; imageUrl: string | null; title: string | null }) => [p.id, p]));
+        const propMap = new Map((props ?? []).map((p: { id: string; price: number | null; address: string | null; city: string | null; state: string | null; bedrooms: number | null; bathrooms: number | null; sqft: number | null; image_url: string | null; title: string | null }) => [p.id, p]));
         setSaved(
           savedRows.map((r) => {
-            const p = propMap.get(r.propertyId) as { price: number | null; address: string | null; city: string | null; state: string | null; bedrooms: number | null; bathrooms: number | null; sqft: number | null; imageUrl: string | null; title: string | null } | undefined;
+            const p = propMap.get(r.propertyId) as { price: number | null; address: string | null; city: string | null; state: string | null; bedrooms: number | null; bathrooms: number | null; sqft: number | null; image_url: string | null; title: string | null } | undefined;
             return {
               id: r.id,
               property_id: r.propertyId,
@@ -187,7 +187,7 @@ export default function DashboardPage() {
               bedrooms: p?.bedrooms ?? null,
               bathrooms: p?.bathrooms ?? null,
               sqft: p?.sqft ?? null,
-              imageUrl: p?.imageUrl ?? null,
+              image_url: p?.image_url ?? null,
               title: p?.title ?? null,
             };
           })
@@ -246,7 +246,7 @@ export default function DashboardPage() {
       if (viewedIds.length > 0) {
         const { data: props } = await supabase
           .from('properties')
-          .select('id, title, address, city, state, price, imageUrl')
+          .select('id, title, address, city, state, price, image_url')
           .in('id', viewedIds);
         setViewed((props ?? []) as ViewedProperty[]);
       }
@@ -298,23 +298,23 @@ export default function DashboardPage() {
   };
 
   const statusColor = (s: string | null) => {
-    if (s === 'ACCEPTED') return 'bg-emerald-500/15 text-emerald-300';
-    if (s === 'SUBMITTED' || s === 'UNDER_REVIEW') return 'bg-sky-500/15 text-sky-300';
-    if (s === 'REJECTED') return 'bg-rose-500/15 text-rose-300';
-    return 'bg-slate-700/60 text-slate-200';
+    if (s === 'ACCEPTED') return 'bg-[#1B4332]/15 text-[#1B4332]';
+    if (s === 'SUBMITTED' || s === 'UNDER_REVIEW') return 'bg-amber-500/15 text-amber-700';
+    if (s === 'REJECTED') return 'bg-rose-500/15 text-rose-700';
+    return 'bg-[#F4F3F0] text-[#4A4A4A]';
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
+    <div className="flex min-h-screen flex-col bg-[#FAFAF8] text-[#1A1A1A]">
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         <header className="mb-6 flex items-center justify-between">
           <Link
             href="/"
-            className="rounded-full border border-slate-800/80 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-emerald-500/60"
+            className="rounded-full border border-[#E8E6E1] bg-white px-3 py-1.5 text-xs font-medium text-[#1A1A1A] hover:border-[#1B4332]"
           >
             HomeBase
           </Link>
-          <div className="flex items-center gap-3 text-xs text-slate-300">
+          <div className="flex items-center gap-3 text-xs text-[#4A4A4A]">
             {email && (
               <span className="hidden max-w-[10rem] truncate sm:inline-block">
                 {email}
@@ -322,7 +322,7 @@ export default function DashboardPage() {
             )}
             <button
               onClick={handleSignOut}
-              className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300 hover:border-emerald-500/60"
+              className="rounded-full border border-[#E8E6E1] bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#4A4A4A] hover:border-[#1B4332]"
             >
               Sign out
             </button>
@@ -332,16 +332,16 @@ export default function DashboardPage() {
         {/* Welcome header with verification badge */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-50">
+            <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold text-[#1A1A1A]">
               Welcome back, {userName}
             </h1>
             <div className="mt-1 flex items-center gap-2">
               {isVerified ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1B4332]/15 px-3 py-1 text-xs font-semibold text-[#1B4332]">
                   ✓ Verified
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-700/60 px-3 py-1 text-xs font-medium text-slate-400">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F4F3F0] px-3 py-1 text-xs font-medium text-[#4A4A4A]">
                   Identity not verified
                 </span>
               )}
@@ -351,27 +351,27 @@ export default function DashboardPage() {
 
         {/* Verification status banner */}
         {isVerified && (
-          <div className="mb-6 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-4">
-            <p className="text-sm font-medium text-emerald-100">
+          <div className="mb-6 rounded-2xl border border-[#1B4332]/30 bg-[#1B4332]/10 px-5 py-4">
+            <p className="text-sm font-medium text-[#1B4332]">
               Identity verified — you can make offers.
             </p>
           </div>
         )}
         {kycStatus === 'PENDING' || kycStatus === 'UNDER_REVIEW' ? (
-          <div className="mb-6 rounded-2xl border border-sky-500/40 bg-sky-500/10 px-5 py-4">
-            <p className="text-sm font-medium text-sky-100">
+          <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4">
+            <p className="text-sm font-medium text-amber-800">
               Your verification is under review — usually within 24 hours.
             </p>
           </div>
         ) : !isVerified && (
-          <div className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-5 py-4">
+          <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-medium text-amber-100">
+              <p className="text-sm font-medium text-amber-800">
                 Complete identity verification to unlock making offers on properties.
               </p>
               <Link
                 href="/verify"
-                className="flex-shrink-0 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-amber-400"
+                className="flex-shrink-0 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600"
               >
                 Verify now
               </Link>
@@ -380,50 +380,50 @@ export default function DashboardPage() {
         )}
 
         {error && (
-          <div className="mb-6 rounded-2xl border border-rose-500/40 bg-rose-500/10 px-5 py-4 text-sm text-rose-100">
+          <div className="mb-6 rounded-2xl border border-rose-400 bg-rose-50 px-5 py-4 text-sm text-rose-800">
             {error}
           </div>
         )}
 
         {/* Empty state: getting started */}
         {!loading && stats.saved === 0 && showings.length === 0 && offers.length === 0 && !acceptedOffer && (
-          <div className="mb-8 rounded-3xl border border-slate-800 bg-slate-900/50 p-8">
-            <h2 className="text-lg font-semibold text-slate-50">Getting started</h2>
-            <p className="mt-1 text-sm text-slate-400">Follow these steps to find and secure your next home.</p>
+          <div className="mb-8 rounded-3xl border border-[#E8E6E1] bg-white p-8 shadow-sm">
+            <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-[#1A1A1A]">Getting started</h2>
+            <p className="mt-1 text-sm text-[#4A4A4A]">Follow these steps to find and secure your next home.</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 hover:border-emerald-500/50">
-                <span className="text-2xl">1</span>
+              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">1</span>
                 <div>
-                  <div className="font-medium text-slate-50">Browse homes</div>
-                  <div className="text-xs text-slate-400">Explore listings in your market.</div>
+                  <div className="font-medium text-[#1A1A1A]">Browse homes</div>
+                  <div className="text-xs text-[#4A4A4A]">Explore listings in your market.</div>
                 </div>
               </Link>
-              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 hover:border-emerald-500/50">
-                <span className="text-2xl">2</span>
+              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">2</span>
                 <div>
-                  <div className="font-medium text-slate-50">Save favorites</div>
-                  <div className="text-xs text-slate-400">Heart homes to revisit later.</div>
+                  <div className="font-medium text-[#1A1A1A]">Save favorites</div>
+                  <div className="text-xs text-[#4A4A4A]">Heart homes to revisit later.</div>
                 </div>
               </Link>
-              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 hover:border-emerald-500/50">
-                <span className="text-2xl">3</span>
+              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">3</span>
                 <div>
-                  <div className="font-medium text-slate-50">Schedule a tour</div>
-                  <div className="text-xs text-slate-400">Book in-person or virtual showings.</div>
+                  <div className="font-medium text-[#1A1A1A]">Schedule a tour</div>
+                  <div className="text-xs text-[#4A4A4A]">Book in-person or virtual showings.</div>
                 </div>
               </Link>
-              <Link href="/verify" className="flex items-start gap-3 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 hover:border-emerald-500/50">
-                <span className="text-2xl">4</span>
+              <Link href="/verify" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">4</span>
                 <div>
-                  <div className="font-medium text-slate-50">Get verified</div>
-                  <div className="text-xs text-slate-400">Complete identity verification.</div>
+                  <div className="font-medium text-[#1A1A1A]">Get verified</div>
+                  <div className="text-xs text-[#4A4A4A]">Complete identity verification.</div>
                 </div>
               </Link>
-              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 hover:border-emerald-500/50">
-                <span className="text-2xl">5</span>
+              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">5</span>
                 <div>
-                  <div className="font-medium text-slate-50">Make an offer</div>
-                  <div className="text-xs text-slate-400">Submit offers from any property.</div>
+                  <div className="font-medium text-[#1A1A1A]">Make an offer</div>
+                  <div className="text-xs text-[#4A4A4A]">Submit offers from any property.</div>
                 </div>
               </Link>
             </div>
@@ -434,20 +434,20 @@ export default function DashboardPage() {
         {acceptedOffer && (
           <Link
             href={`/transaction/${acceptedOffer.id}`}
-            className="mb-6 flex items-center justify-between rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-4"
+            className="mb-6 flex items-center justify-between rounded-2xl border border-[#1B4332]/30 bg-[#1B4332]/10 px-5 py-4"
           >
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#1B4332]">
                 Active transaction
               </p>
-              <p className="mt-1 font-medium text-slate-50">
+              <p className="mt-1 font-medium text-[#1A1A1A]">
                 {acceptedOffer.property_address}
               </p>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-[#4A4A4A]">
                 Offer accepted • Track progress
               </p>
             </div>
-            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300">
+            <span className="rounded-full bg-[#1B4332]/20 px-3 py-1 text-xs font-semibold text-[#1B4332]">
               {acceptedOffer.status}
             </span>
           </Link>
@@ -455,11 +455,11 @@ export default function DashboardPage() {
 
         {/* Active deals */}
         {deals.length > 0 && (
-          <div className="mb-6 rounded-3xl border border-slate-800 bg-slate-950/80 p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">
+          <div className="mb-6 rounded-3xl border border-[#E8E6E1] bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#1B4332]">
               Active deals
             </p>
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-sm text-[#4A4A4A]">
               Deals where your offer was accepted — track progress to closing.
             </p>
             <div className="mt-4 space-y-2">
@@ -467,17 +467,17 @@ export default function DashboardPage() {
                 <Link
                   key={deal.id}
                   href={`/dashboard/buying/${deal.property_id}`}
-                  className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 hover:border-emerald-500/50"
+                  className="flex items-center justify-between rounded-2xl border border-[#E8E6E1] bg-[#F4F3F0] px-4 py-3 hover:border-[#1B4332]"
                 >
                   <div>
-                    <p className="font-medium text-slate-50">
+                    <p className="font-medium text-[#1A1A1A]">
                       {deal.property_address ?? 'Property'}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-[#4A4A4A]">
                       {deal.agreed_price != null ? `$${deal.agreed_price.toLocaleString()}` : '—'} · {deal.status}
                     </p>
                   </div>
-                  <span className="text-slate-500">→</span>
+                  <span className="text-[#888888]">→</span>
                 </Link>
               ))}
             </div>
@@ -486,11 +486,11 @@ export default function DashboardPage() {
 
         {/* Active transactions (buying pipelines) */}
         {pipelines.length > 0 && (
-          <div className="mb-6 rounded-3xl border border-slate-800 bg-slate-950/80 p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">
+          <div className="mb-6 rounded-3xl border border-[#E8E6E1] bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#1B4332]">
               Active transactions
             </p>
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-sm text-[#4A4A4A]">
               Properties you’re pursuing — track each deal in the buying pipeline.
             </p>
             <div className="mt-4 space-y-2">
@@ -498,22 +498,22 @@ export default function DashboardPage() {
                 <Link
                   key={pipe.id}
                   href={`/dashboard/buying/${pipe.property_id}`}
-                  className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 hover:border-emerald-500/50"
+                  className="flex items-center justify-between rounded-2xl border border-[#E8E6E1] bg-[#F4F3F0] px-4 py-3 hover:border-[#1B4332]"
                 >
                   <div>
-                    <p className="font-medium text-slate-50">
+                    <p className="font-medium text-[#1A1A1A]">
                       {pipe.property_address ?? 'Property'}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-[#4A4A4A]">
                       {pipe.property_city}, {pipe.property_state}
                       {pipe.property_price != null && ` • $${pipe.property_price.toLocaleString()}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-slate-700/60 px-2.5 py-1 text-[11px] font-semibold uppercase text-slate-300">
+                    <span className="rounded-full bg-[#E8E6E1] px-2.5 py-1 text-[11px] font-semibold uppercase text-[#4A4A4A]">
                       {getStageLabel(pipe.current_stage)}
                     </span>
-                    <span className="text-slate-500">→</span>
+                    <span className="text-[#888888]">→</span>
                   </div>
                 </Link>
               ))}
@@ -523,31 +523,31 @@ export default function DashboardPage() {
 
         <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
           <div className="space-y-4">
-            <div className="rounded-3xl border border-slate-800 bg-slate-950/80 p-5 shadow-xl shadow-black/40">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">
+            <div className="rounded-3xl border border-[#E8E6E1] bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#1B4332]">
                 Overview
               </p>
-              <h2 className="mt-3 text-lg font-semibold text-slate-50">
+              <h2 className="mt-3 font-[family-name:var(--font-display)] text-lg font-semibold text-[#1A1A1A]">
                 Your buyer command center
               </h2>
-              <p className="mt-2 text-sm text-slate-300">
+              <p className="mt-2 text-sm text-[#4A4A4A]">
                 Track saved homes, upcoming showings, and stay on top of your next move.
               </p>
 
-              <div className="mt-6 grid grid-cols-2 gap-3 text-sm text-slate-200 min-[390px]:grid-cols-2 max-[389px]:grid-cols-1">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">
-                  <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
+              <div className="mt-6 grid grid-cols-2 gap-3 text-sm min-[390px]:grid-cols-2 max-[389px]:grid-cols-1">
+                <div className="rounded-2xl border border-[#E8E6E1] bg-[#F4F3F0] px-4 py-3">
+                  <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#4A4A4A]">
                     Saved homes
                   </div>
-                  <div className="mt-1 text-2xl font-semibold">
+                  <div className="mt-1 font-[family-name:var(--font-mono)] text-2xl font-semibold text-[#1A1A1A]">
                     {loading ? '—' : stats.saved}
                   </div>
                 </div>
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">
-                  <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
+                <div className="rounded-2xl border border-[#E8E6E1] bg-[#F4F3F0] px-4 py-3">
+                  <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#4A4A4A]">
                     Total listings
                   </div>
-                  <div className="mt-1 text-2xl font-semibold">
+                  <div className="mt-1 font-[family-name:var(--font-mono)] text-2xl font-semibold text-[#1A1A1A]">
                     {loading ? '—' : stats.total}
                   </div>
                 </div>
@@ -557,28 +557,28 @@ export default function DashboardPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <Link
                 href="/properties"
-                className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 hover:border-emerald-500/60"
+                className="flex items-center gap-3 rounded-2xl border border-[#E8E6E1] bg-white px-4 py-3 shadow-sm hover:border-[#1B4332]"
               >
                 <span className="text-lg">🔍</span>
                 <div>
-                  <div className="text-sm font-medium text-slate-50">
+                  <div className="text-sm font-medium text-[#1A1A1A]">
                     Browse listings
                   </div>
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-[#4A4A4A]">
                     Explore homes across your target markets.
                   </div>
                 </div>
               </Link>
               <Link
                 href="/saved"
-                className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 hover:border-emerald-500/60"
+                className="flex items-center gap-3 rounded-2xl border border-[#E8E6E1] bg-white px-4 py-3 shadow-sm hover:border-[#1B4332]"
               >
                 <span className="text-lg">❤️</span>
                 <div>
-                  <div className="text-sm font-medium text-slate-50">
+                  <div className="text-sm font-medium text-[#1A1A1A]">
                     Saved homes
                   </div>
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-[#4A4A4A]">
                     Quickly revisit homes you love.
                   </div>
                 </div>
@@ -586,14 +586,14 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <aside className="space-y-3 rounded-3xl border border-slate-800 bg-slate-950/80 p-5">
+          <aside className="space-y-3 rounded-3xl border border-[#E8E6E1] bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#1B4332]">
                 Upcoming showings
               </p>
               <Link
                 href="/showings"
-                className="text-[11px] font-semibold text-emerald-300 hover:text-emerald-200"
+                className="text-[11px] font-semibold text-[#52B788] hover:text-[#1B4332]"
               >
                 View all →
               </Link>
@@ -603,12 +603,12 @@ export default function DashboardPage() {
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-16 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/80"
+                    className="h-16 animate-pulse rounded-2xl border border-[#E8E6E1] bg-[#F4F3F0]"
                   />
                 ))}
               </div>
             ) : showings.length === 0 ? (
-              <p className="py-4 text-xs text-slate-500">
+              <p className="py-4 text-xs text-[#4A4A4A]">
                 No upcoming showings. Schedule a tour from any property page.
               </p>
             ) : (
@@ -617,22 +617,22 @@ export default function DashboardPage() {
                   <Link
                     key={s.id}
                     href="/showings"
-                    className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/80 px-3 py-2.5 hover:border-emerald-500/40"
+                    className="flex items-center justify-between rounded-2xl border border-[#E8E6E1] bg-[#F4F3F0] px-3 py-2.5 hover:border-[#1B4332]"
                   >
                     <div>
-                      <div className="text-xs font-medium text-slate-100">
+                      <div className="text-xs font-medium text-[#1A1A1A]">
                         {s.property_address}
                       </div>
-                      <div className="text-[11px] text-slate-500">
+                      <div className="text-[11px] text-[#4A4A4A]">
                         {s.property_city}, {s.property_state}
                       </div>
                       {s.tour_type && (
-                        <div className="mt-0.5 text-[10px] uppercase tracking-wider text-slate-600">
+                        <div className="mt-0.5 text-[10px] uppercase tracking-wider text-[#888888]">
                           {s.tour_type === 'VIRTUAL' ? 'Virtual' : 'In-person'}
                         </div>
                       )}
                     </div>
-                    <div className="text-right text-[11px] text-slate-400">
+                    <div className="text-right text-[11px] text-[#4A4A4A]">
                       {s.scheduled_at
                         ? new Date(s.scheduled_at).toLocaleDateString(undefined, {
                             weekday: 'short',
@@ -652,14 +652,14 @@ export default function DashboardPage() {
 
         <section className="grid gap-6 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           {/* Saved homes preview */}
-          <div className="rounded-3xl border border-slate-800 bg-slate-950/80 p-5">
+          <div className="rounded-3xl border border-[#E8E6E1] bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between text-xs">
-              <p className="font-semibold uppercase tracking-[0.3em] text-slate-400">
+              <p className="font-semibold uppercase tracking-[0.3em] text-[#4A4A4A]">
                 Saved homes
               </p>
               <Link
                 href="/saved"
-                className="text-[11px] font-semibold text-emerald-300 hover:text-emerald-200"
+                className="text-[11px] font-semibold text-[#52B788] hover:text-[#1B4332]"
               >
                 View all ({stats.saved}) →
               </Link>
@@ -669,12 +669,12 @@ export default function DashboardPage() {
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-32 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/80"
+                    className="h-32 animate-pulse rounded-2xl border border-[#E8E6E1] bg-[#F4F3F0]"
                   />
                 ))}
               </div>
             ) : saved.length === 0 ? (
-              <p className="py-6 text-xs text-slate-500">
+              <p className="py-6 text-xs text-[#4A4A4A]">
                 You have no saved homes yet. Browse listings and tap the heart icon to save.
               </p>
             ) : (
@@ -691,7 +691,7 @@ export default function DashboardPage() {
                     beds={s.bedrooms}
                     baths={s.bathrooms}
                     sqft={s.sqft}
-                    imageUrl={s.imageUrl}
+                    image_url={s.image_url}
                     href={`/properties/${s.property_id}`}
                   />
                 ))}
@@ -701,14 +701,14 @@ export default function DashboardPage() {
 
           <div className="space-y-6">
             {/* My offers */}
-            <div className="rounded-3xl border border-slate-800 bg-slate-950/80 p-5">
+            <div className="rounded-3xl border border-[#E8E6E1] bg-white p-5 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
-                <p className="font-semibold uppercase tracking-[0.3em] text-slate-400">
+                <p className="font-semibold uppercase tracking-[0.3em] text-[#4A4A4A]">
                   My offers
                 </p>
                 <Link
                   href="/dashboard/offers"
-                  className="text-[11px] font-semibold text-emerald-300 hover:text-emerald-200"
+                  className="text-[11px] font-semibold text-[#52B788] hover:text-[#1B4332]"
                 >
                   View all →
                 </Link>
@@ -718,12 +718,12 @@ export default function DashboardPage() {
                   {Array.from({ length: 3 }).map((_, i) => (
                     <div
                       key={i}
-                      className="h-14 animate-pulse rounded-xl border border-slate-800 bg-slate-900/80"
+                      className="h-14 animate-pulse rounded-xl border border-[#E8E6E1] bg-[#F4F3F0]"
                     />
                   ))}
                 </div>
               ) : offers.length === 0 ? (
-                <p className="py-4 text-xs text-slate-500">
+                <p className="py-4 text-xs text-[#4A4A4A]">
                   No offers yet. Make an offer from any property page.
                 </p>
               ) : (
@@ -732,13 +732,13 @@ export default function DashboardPage() {
                     <Link
                       key={o.id}
                       href={`/transaction/${o.id}`}
-                      className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-2 hover:border-emerald-500/40"
+                      className="flex items-center justify-between rounded-xl border border-[#E8E6E1] bg-[#F4F3F0] px-3 py-2 hover:border-[#1B4332]"
                     >
                       <div>
-                        <div className="text-xs font-medium text-slate-100">
+                        <div className="font-[family-name:var(--font-mono)] text-xs font-medium text-[#1A1A1A]">
                           ${o.price?.toLocaleString() ?? '—'}
                         </div>
-                        <div className="text-[11px] text-slate-500">
+                        <div className="text-[11px] text-[#4A4A4A]">
                           {o.property_address}
                         </div>
                       </div>
@@ -757,11 +757,11 @@ export default function DashboardPage() {
             </div>
 
             {/* Market activity */}
-            <div className="rounded-3xl border border-slate-800 bg-slate-950/80 p-5">
-              <p className="font-semibold uppercase tracking-[0.3em] text-slate-400">
+            <div className="rounded-3xl border border-[#E8E6E1] bg-white p-5 shadow-sm">
+              <p className="font-semibold uppercase tracking-[0.3em] text-[#4A4A4A]">
                 Market activity
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-[#4A4A4A]">
                 Recently viewed properties
               </p>
               {loading ? (
@@ -769,12 +769,12 @@ export default function DashboardPage() {
                   {Array.from({ length: 2 }).map((_, i) => (
                     <div
                       key={i}
-                      className="h-12 animate-pulse rounded-xl border border-slate-800 bg-slate-900/80"
+                      className="h-12 animate-pulse rounded-xl border border-[#E8E6E1] bg-[#F4F3F0]"
                     />
                   ))}
                 </div>
               ) : viewed.length === 0 ? (
-                <p className="mt-3 py-2 text-xs text-slate-500">
+                <p className="mt-3 py-2 text-xs text-[#4A4A4A]">
                   No recently viewed properties.
                 </p>
               ) : (
@@ -783,23 +783,23 @@ export default function DashboardPage() {
                     <Link
                       key={p.id}
                       href={`/properties/${p.id}`}
-                      className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-2 hover:border-emerald-500/40"
+                      className="flex items-center gap-3 rounded-xl border border-[#E8E6E1] bg-[#F4F3F0] px-3 py-2 hover:border-[#1B4332]"
                     >
-                      <div className="h-10 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-slate-800">
-                        {p.imageUrl ? (
+                      <div className="h-10 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-[#E8E6E1]">
+                        {p.image_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={p.imageUrl}
+                            src={p.image_url}
                             alt=""
                             className="h-full w-full object-cover"
                           />
                         ) : null}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-xs font-medium text-slate-100">
+                        <div className="truncate text-xs font-medium text-[#1A1A1A]">
                           {p.address ?? p.title}
                         </div>
-                        <div className="text-[11px] text-slate-500">
+                        <div className="font-[family-name:var(--font-mono)] text-[11px] text-[#4A4A4A]">
                           ${p.price?.toLocaleString() ?? '—'}
                         </div>
                       </div>
