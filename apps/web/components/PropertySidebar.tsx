@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
-const supabase = getSupabaseClient();
 import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { ScheduleTourModal } from '@/components/ScheduleTourModal';
 import { SignInRequiredModal } from '@/components/SignInRequiredModal';
