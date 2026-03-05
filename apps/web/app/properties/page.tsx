@@ -517,7 +517,7 @@ export default function PropertiesPage() {
                       beds={p.bedrooms}
                       baths={p.bathrooms}
                       sqft={p.sqft}
-                      image_url={p.image_url}
+                      image_url={p.image_url ?? (p as { imageUrl?: string | null }).imageUrl ?? null}
                       href={`/properties/${p.id}`}
                       showSave
                       saved={savedIds.has(p.id)}

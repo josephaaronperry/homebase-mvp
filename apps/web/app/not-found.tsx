@@ -4,25 +4,25 @@ import { SearchBar } from '@/components/SearchBar';
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#FAFAF8] px-6">
       <div className="mx-auto max-w-lg text-center">
         <div className="mb-6 flex justify-center">
-          <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-slate-800/80">
+          <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-[#E8E6E1]">
             <span className="text-5xl">🏠</span>
           </div>
         </div>
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#52B788]">
           HomeBase
         </p>
-        <h1 className="mt-4 text-3xl font-bold text-white">
+        <h1 className="mt-4 text-3xl font-bold text-[#1A1A1A]">
           Page not found
         </h1>
-        <p className="mt-3 text-sm text-slate-400">
+        <p className="mt-3 text-sm text-[#4A4A4A]">
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
         </p>
 
         <div className="mt-8 max-w-md">
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+          <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-[#4A4A4A]">
             Search for a home
           </p>
           <SearchBar placeholder="City, address, or ZIP..." />
@@ -31,19 +31,19 @@ export default function NotFound() {
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           <Link
             href="/"
-            className="rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 hover:bg-emerald-400"
+            className="rounded-2xl bg-[#1B4332] px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-[#2D5A47]"
           >
             Go home
           </Link>
           <Link
             href="/properties"
-            className="rounded-2xl border border-slate-700 bg-slate-900/80 px-5 py-3 text-sm font-semibold text-slate-200 hover:border-slate-600"
+            className="rounded-2xl border border-[#E8E6E1] bg-white px-5 py-3 text-sm font-semibold text-[#1A1A1A] hover:border-[#1B4332]"
           >
             Browse homes
           </Link>
           <Link
             href="/login"
-            className="rounded-2xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 hover:border-slate-600"
+            className="rounded-2xl border border-[#E8E6E1] px-5 py-3 text-sm font-semibold text-[#4A4A4A] hover:border-[#1B4332]"
           >
             Sign in
           </Link>
