@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { PropertyDetailContent } from './PropertyDetailContent';
 
 type PageProps = {
@@ -43,6 +43,7 @@ type SimilarRow = {
 };
 
 async function getProperty(id: string): Promise<PropertyRow | null> {
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
     .from('properties')
     .select(
@@ -55,7 +56,10 @@ async function getProperty(id: string): Promise<PropertyRow | null> {
     console.error('[PropertyDetail] getProperty error:', error.message, 'id:', id);
     return null;
   }
-  if (!data) return null;
+  if (!data) {
+    console.error('[PropertyDetail] notFound: no property for id', id);
+    return null;
+  }
   return data as PropertyRow;
 }
 
@@ -64,6 +68,8 @@ async function getSimilar(
   city: string | null,
   price: number | null
 ): Promise<SimilarRow[]> {
+  const supabase = await getSupabaseServerClient();
+
   if (!city && (price == null || price <= 0)) {
     const { data } = await supabase
       .from('properties')
@@ -100,10 +106,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const { id } = await params;
   const property = await getProperty(id);
 
-  if (!property) {
-    console.error('[PropertyDetail] notFound: no property for id', id);
-    notFound();
-  }
+  if (!property) notFound();
 
   const similar = await getSimilar(
     String(property.id),

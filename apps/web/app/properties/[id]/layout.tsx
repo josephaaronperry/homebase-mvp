@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -8,6 +8,7 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
+  const supabase = await getSupabaseServerClient();
   const { data } = await supabase
     .from('properties')
     .select('title, address, city, state, price')
