@@ -8,7 +8,6 @@ import { PropertySidebar } from '@/components/PropertySidebar';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { useToast } from '@/components/ToastProvider';
 
-const supabase = getSupabaseClient();
 const GUEST_SAVED_KEY = 'homebase_saved';
 
 export type PropertyDetail = {
@@ -33,7 +32,7 @@ export type PropertyDetail = {
   garage: boolean | number | string | null;
 };
 
-type SimilarProperty = {
+export type SimilarProperty = {
   id: string | number;
   title: string | null;
   address: string | null;
@@ -48,13 +47,13 @@ type SimilarProperty = {
 
 type Props = {
   property: PropertyDetail;
-  similar: SimilarProperty[];
+  similarProperties: SimilarProperty[];
   propertyUrl: string;
 };
 
 const DESCRIPTION_TRUNCATE = 300;
 
-export function PropertyDetailContent({ property, similar, propertyUrl }: Props) {
+export function PropertyDetailContent({ property, similarProperties, propertyUrl }: Props) {
   const toast = useToast();
   const [saved, setSaved] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -66,6 +65,7 @@ export function PropertyDetailContent({ property, similar, propertyUrl }: Props)
 
   useEffect(() => {
     const loadSaved = async () => {
+      const supabase = getSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         try {
@@ -83,6 +83,7 @@ export function PropertyDetailContent({ property, similar, propertyUrl }: Props)
 
   const handleSaveClick = async (e: React.MouseEvent) => {
     e.preventDefault();
+    const supabase = getSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     const nextSaved = !saved;
     setSaved(nextSaved);
@@ -335,13 +336,13 @@ export function PropertyDetailContent({ property, similar, propertyUrl }: Props)
             </div>
 
             {/* Similar homes */}
-            {similar.length > 0 && (
+            {similarProperties.length > 0 && (
               <section>
                 <h2 className="font-[family-name:var(--font-display)] mb-3 text-lg font-semibold text-[#1A1A1A]">
                   More homes like this
                 </h2>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  {similar.map((p) => (
+                  {similarProperties.map((p) => (
                     <PropertyCard
                       key={p.id}
                       id={p.id}

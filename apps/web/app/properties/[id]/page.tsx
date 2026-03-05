@@ -120,7 +120,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   return (
     <PropertyDetailContent
       property={property}
-      similar={similar}
+      similarProperties={similar}
       propertyUrl={propertyUrl}
     />
   );
