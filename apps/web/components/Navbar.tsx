@@ -88,6 +88,9 @@ export function Navbar() {
       <Link href="/properties" className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-body text-sm font-medium" onClick={() => setOpen(false)}>
         Browse
       </Link>
+      <Link href="/pre-approval" className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-body text-sm font-medium" onClick={() => setOpen(false)}>
+        Get pre-approved
+      </Link>
       <Link href="/how-it-works" className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-body text-sm font-medium" onClick={() => setOpen(false)}>
         How it works
       </Link>
@@ -105,11 +108,11 @@ export function Navbar() {
             <div className="fixed inset-0 z-40" onClick={() => setSellOpen(false)} aria-hidden />
             <div className="absolute right-0 top-full z-50 mt-1 min-w-[11rem] rounded-xl border border-warm-border bg-[var(--color-bg-card)] py-2 shadow-[var(--shadow-modal)]">
               <Link
-                href="/sell/list"
+                href="/sell"
                 className="block px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-warm-subtle"
                 onClick={() => { setSellOpen(false); setOpen(false); }}
               >
-                List your home
+                Sell your home
               </Link>
               <Link
                 href="/sell/dashboard"
@@ -262,6 +265,9 @@ export function Navbar() {
                     <Link href="/dashboard" className="block px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-warm-subtle" onClick={() => setUserOpen(false)}>
                       Dashboard
                     </Link>
+                    <Link href="/pre-approval" className="block px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-warm-subtle" onClick={() => setUserOpen(false)}>
+                      Pre-approval status
+                    </Link>
                     <Link href="/offers" className="block px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-warm-subtle" onClick={() => setUserOpen(false)}>
                       My offers
                     </Link>
@@ -269,7 +275,7 @@ export function Navbar() {
                       Saved homes
                     </Link>
                     <Link href="/sell" className="block px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-warm-subtle" onClick={() => setUserOpen(false)}>
-                      Sell a home
+                      Sell your home
                     </Link>
                     <Link href="/profile" className="block px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] hover:bg-warm-subtle" onClick={() => setUserOpen(false)}>
                       Profile
@@ -335,14 +341,17 @@ export function Navbar() {
             <Link href="/properties" className="rounded-lg px-3 py-2 hover:bg-warm-subtle" onClick={() => setOpen(false)}>
               Browse
             </Link>
+            <Link href="/pre-approval" className="rounded-lg px-3 py-2 hover:bg-warm-subtle" onClick={() => setOpen(false)}>
+              Get pre-approved
+            </Link>
             <Link href="/how-it-works" className="rounded-lg px-3 py-2 hover:bg-warm-subtle" onClick={() => setOpen(false)}>
               How it works
             </Link>
             <Link href="/sell" className="rounded-lg px-3 py-2 hover:bg-warm-subtle" onClick={() => setOpen(false)}>
               For sellers
             </Link>
-            <Link href="/sell/list" className="rounded-lg px-3 py-2 pl-6 text-[var(--color-text-muted)] hover:bg-warm-subtle" onClick={() => setOpen(false)}>
-              List your home
+            <Link href="/sell" className="rounded-lg px-3 py-2 pl-6 text-[var(--color-text-muted)] hover:bg-warm-subtle" onClick={() => setOpen(false)}>
+              Sell your home
             </Link>
             <Link href="/sell/dashboard" className="rounded-lg px-3 py-2 pl-6 text-[var(--color-text-muted)] hover:bg-warm-subtle" onClick={() => setOpen(false)}>
               Seller dashboard

@@ -87,6 +87,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [kycStatus, setKycStatus] = useState<string | null>(null);
+  const [preApprovalStatus, setPreApprovalStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -240,6 +241,9 @@ export default function DashboardPage() {
       setKycStatus(kyc);
       setIsVerified(kyc === 'APPROVED');
 
+      const { data: userProfile } = await supabase.from('users').select('preApprovalStatus').eq('id', user.id).maybeSingle();
+      setPreApprovalStatus((userProfile as { preApprovalStatus?: string } | null)?.preApprovalStatus ?? 'NONE');
+
       const viewedIds = (viewedRes.data ?? [])
         .map((v: { property_id: string }) => v.property_id)
         .filter(Boolean);
@@ -374,6 +378,26 @@ export default function DashboardPage() {
                 className="flex-shrink-0 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600"
               >
                 Verify now
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Pre-approval status banner */}
+        {(preApprovalStatus === 'NONE' || preApprovalStatus === 'PENDING') && (
+          <div className="mb-6 rounded-2xl border border-[#E8E6E1] bg-white px-5 py-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-[#1A1A1A]">Pre-approval status</p>
+                <p className="mt-0.5 text-xs text-[#4A4A4A]">
+                  {preApprovalStatus === 'PENDING' ? 'Your pre-approval is under review. We\'ll notify you within 1 business day.' : 'Upload a pre-approval letter or proof of funds to submit offers.'}
+                </p>
+              </div>
+              <Link
+                href="/pre-approval"
+                className="flex-shrink-0 rounded-xl bg-[#1B4332] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2D5A47]"
+              >
+                {preApprovalStatus === 'PENDING' ? 'View status' : 'Get pre-approved'}
               </Link>
             </div>
           </div>

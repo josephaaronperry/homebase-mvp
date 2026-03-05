@@ -46,6 +46,9 @@ type KycRow = {
   status: string;
   submission_type: string | null;
   full_name: string | null;
+  proof_type: string | null;
+  id_front_url: string | null;
+  proof_url: string | null;
   submitted_at: string | null;
   created_at: string | null;
   user_email: string | null;
@@ -105,7 +108,7 @@ export default function AdminPage() {
           supabase.from('properties').select('id, address, city, state, price, status').order('createdAt', { ascending: false }),
           supabase.from('users').select('id, fullName, email, phone, createdAt').order('createdAt', { ascending: false }),
           supabase.from('offers').select('id, userId, property_id, offerPrice, status').order('createdAt', { ascending: false }),
-          supabase.from('kyc_submissions').select('id, user_id, status, full_name, submitted_at, created_at').order('created_at', { ascending: false }),
+          supabase.from('kyc_submissions').select('id, user_id, status, submission_type, full_name, proof_type, id_front_url, proof_url, submitted_at, created_at').order('created_at', { ascending: false }),
         ]);
 
         if (propRes.error) throw propRes.error;
@@ -144,7 +147,7 @@ export default function AdminPage() {
             const { data: kp } = await supabase.from('users').select('id, email').in('id', kycUserIds);
             (kp ?? []).forEach((p: { id: string; email: string | null }) => { kycProfileMap.set(p.id, p.email ?? ''); });
           }
-          setKyc(kycList.map((k) => ({ ...k, submission_type: (k as { submission_type?: string }).submission_type ?? 'buyer', user_email: kycProfileMap.get(k.user_id) ?? null })));
+          setKyc(kycList.map((k) => ({ ...k, user_email: kycProfileMap.get(k.user_id) ?? null })));
         }
 
         const dealsRes = await supabase.from('deals').select('id, property_id, buyer_id, seller_id, agreed_price, status, lender_id, created_at').order('created_at', { ascending: false });
@@ -213,6 +216,8 @@ export default function AdminPage() {
       setError(error.message);
       return;
     }
+    const { error: userUpdateError } = await supabase.from('users').update({ kycStatus: status }).eq('id', userId);
+    if (userUpdateError) console.warn('Could not update users.kycStatus:', userUpdateError.message);
     setKyc((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     setRejectModal(null);
     setRejectReason('');
@@ -377,14 +382,17 @@ export default function AdminPage() {
               <p className="rounded-2xl border border-slate-800 bg-slate-900/50 p-8 text-center text-slate-400">No KYC submissions.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[700px] border-collapse text-left text-sm">
+                <table className="w-full min-w-[800px] border-collapse text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-700 text-slate-400">
                       <th className="py-2 pr-2 font-semibold">Submission ID</th>
                       <th className="py-2 pr-2 font-semibold">User email</th>
+                      <th className="py-2 pr-2 font-semibold">Name</th>
                       <th className="py-2 pr-2 font-semibold">Type</th>
+                      <th className="py-2 pr-2 font-semibold">Proof type</th>
                       <th className="py-2 pr-2 font-semibold">Status</th>
                       <th className="py-2 pr-2 font-semibold">Submitted</th>
+                      <th className="py-2 pr-2 font-semibold">Docs</th>
                       <th className="py-2 pr-2 font-semibold">Actions</th>
                     </tr>
                   </thead>
@@ -393,13 +401,30 @@ export default function AdminPage() {
                       <tr key={r.id} className="border-b border-slate-800/80">
                         <td className="py-2 pr-2 font-mono text-xs text-slate-300">{r.id.slice(0, 8)}</td>
                         <td className="py-2 pr-2 text-slate-200">{r.user_email ?? r.user_id.slice(0, 8)}</td>
-                        <td className="py-2 pr-2 text-slate-300">{r.submission_type === 'seller' ? 'Seller' : 'Buyer'}</td>
+                        <td className="py-2 pr-2 text-slate-300">{r.full_name ?? '\u2014'}</td>
+                        <td className="py-2 pr-2">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.submission_type === 'seller' || r.submission_type === 'seller_fsbo' || r.submission_type === 'seller_agent' ? 'bg-sky-500/20 text-sky-300' : 'bg-slate-500/20 text-slate-300'}`}>
+                            {r.submission_type === 'seller' ? 'Seller' : r.submission_type === 'seller_fsbo' ? 'FSBO' : r.submission_type === 'seller_agent' ? 'Agent' : 'Buyer'}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-2 text-slate-500 text-xs">{r.proof_type ?? '\u2014'}</td>
                         <td className="py-2 pr-2">
                           <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${r.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-300' : r.status === 'REJECTED' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'}`}>
                             {r.status}
                           </span>
                         </td>
-                        <td className="py-2 pr-2 text-slate-500 text-xs">{r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</td>
+                        <td className="py-2 pr-2 text-slate-500 text-xs">{r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : r.created_at ? new Date(r.created_at).toLocaleDateString() : '\u2014'}</td>
+                        <td className="py-2 pr-2">
+                          {(r.id_front_url || r.proof_url) && (
+                            <details className="text-xs">
+                              <summary className="cursor-pointer text-emerald-400 hover:text-emerald-300">View docs</summary>
+                              <div className="mt-1 space-y-0.5 text-slate-500">
+                                {r.id_front_url && <div>ID: {r.id_front_url}</div>}
+                                {r.proof_url && <div>Proof: {r.proof_url}</div>}
+                              </div>
+                            </details>
+                          )}
+                        </td>
                         <td className="py-2 pr-2">
                           {r.status === 'PENDING' && (
                             <div className="flex gap-2">

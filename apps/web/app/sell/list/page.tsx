@@ -1,11 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase/client';
-
-const supabase = getSupabaseClient();
 
 type SellerVerificationStatus = 'loading' | 'approved' | 'unverified';
 
@@ -27,9 +25,12 @@ type Step = 1 | 2 | 3 | 4 | 5;
 
 export default function SellListPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const listType = searchParams.get('type') === 'agent' ? 'agent' : 'fsbo';
   const [step, setStep] = useState<Step>(1);
   const [submitting, setSubmitting] = useState(false);
   const [sellerVerification, setSellerVerification] = useState<SellerVerificationStatus>('loading');
+  const supabase = getSupabaseClient();
 
   useEffect(() => {
     ensurePropertyPhotosBucket();
@@ -48,11 +49,15 @@ export default function SellListPage() {
         .eq('user_id', user.id)
         .order('submitted_at', { ascending: false })
         .limit(10);
-      const sellerApproved = submissions?.some((s) => (s as { submission_type?: string }).submission_type === 'seller' && s.status === 'APPROVED');
+      const expectedType = listType === 'agent' ? 'seller_agent' : 'seller_fsbo';
+      const sellerApproved = submissions?.some((s) => {
+        const st = (s as { submission_type?: string }).submission_type;
+        return (st === expectedType || st === 'seller') && s.status === 'APPROVED';
+      });
       setSellerVerification(sellerApproved ? 'approved' : 'unverified');
     };
     checkSellerVerification();
-  }, []);
+  }, [listType]);
 
   const [form, setForm] = useState({
     address: '',
@@ -71,6 +76,12 @@ export default function SellListPage() {
     highlightInput: '',
     photoUrls: [] as string[],
     agreed: false,
+    agentLicenseNumber: '',
+    brokerageName: '',
+    mlsId: '',
+    clientName: '',
+    agentEmail: '',
+    agentPhone: '',
   });
 
   const uploadPhoto = useCallback(async (file: File): Promise<string> => {
@@ -185,7 +196,7 @@ export default function SellListPage() {
           <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             <p className="font-medium">Verify your identity to publish your listing.</p>
             <p className="mt-1 text-xs">Complete seller verification to list your home on the marketplace.</p>
-            <Link href="/sell/verify" className="mt-3 inline-block font-semibold text-amber-700 hover:text-amber-900">Verify now →</Link>
+            <Link href={listType === 'agent' ? '/sell/verify?type=agent' : '/sell/verify?type=fsbo'} className="mt-3 inline-block font-semibold text-amber-700 hover:text-amber-900">Verify now →</Link>
           </div>
         )}
         <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold text-[#1A1A1A]">List your home</h1>
@@ -198,6 +209,35 @@ export default function SellListPage() {
           {step === 1 && (
             <div className="space-y-4">
               <h2 className="text-sm font-semibold text-[#1A1A1A]">Property basics</h2>
+              {listType === 'agent' && (
+                <>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-[#4A4A4A]">Agent license number *</label>
+                    <input value={form.agentLicenseNumber} onChange={(e) => setForm((f) => ({ ...f, agentLicenseNumber: e.target.value }))} placeholder="License #" className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm placeholder:text-[#888888]" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-[#4A4A4A]">Brokerage name *</label>
+                    <input value={form.brokerageName} onChange={(e) => setForm((f) => ({ ...f, brokerageName: e.target.value }))} placeholder="Brokerage" className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm placeholder:text-[#888888]" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-[#4A4A4A]">MLS ID (optional)</label>
+                    <input value={form.mlsId} onChange={(e) => setForm((f) => ({ ...f, mlsId: e.target.value }))} placeholder="MLS #" className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm placeholder:text-[#888888]" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-[#4A4A4A]">Client name (seller) *</label>
+                    <input value={form.clientName} onChange={(e) => setForm((f) => ({ ...f, clientName: e.target.value }))} placeholder="Full legal name" className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm placeholder:text-[#888888]" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-[#4A4A4A]">Agent email *</label>
+                    <input type="email" value={form.agentEmail} onChange={(e) => setForm((f) => ({ ...f, agentEmail: e.target.value }))} placeholder="you@brokerage.com" className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm placeholder:text-[#888888]" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-[#4A4A4A]">Agent phone *</label>
+                    <input type="tel" value={form.agentPhone} onChange={(e) => setForm((f) => ({ ...f, agentPhone: e.target.value }))} placeholder="+1 (555) 000-0000" className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm placeholder:text-[#888888]" />
+                  </div>
+                  <hr className="border-[#E8E6E1]" />
+                </>
+              )}
               <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="Street address" className="h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A] placeholder:text-[#888888]" />
               <div className="grid grid-cols-3 gap-2">
                 <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="City" className="h-10 rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm text-[#1A1A1A] placeholder:text-[#888888]" />
@@ -212,7 +252,7 @@ export default function SellListPage() {
                   ))}
                 </div>
               </div>
-              <button type="button" onClick={() => setStep(2)} disabled={!form.address || !form.city || !form.state} className="w-full rounded-xl bg-[#1B4332] py-2.5 text-sm font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">Continue</button>
+              <button type="button" onClick={() => setStep(2)} disabled={!form.address || !form.city || !form.state || (listType === 'agent' && (!form.agentLicenseNumber.trim() || !form.brokerageName.trim() || !form.clientName.trim() || !form.agentEmail.trim() || !form.agentPhone.trim()))} className="w-full rounded-xl bg-[#1B4332] py-2.5 text-sm font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">Continue</button>
             </div>
           )}
 
@@ -305,11 +345,16 @@ export default function SellListPage() {
           {step === 5 && (
             <div className="space-y-4">
               <h2 className="text-sm font-semibold text-[#1A1A1A]">Review & submit</h2>
+              {listType === 'fsbo' && (
+                <p className="rounded-xl border border-[#E8E6E1] bg-[#F4F3F0] px-4 py-3 text-xs text-[#4A4A4A]">
+                  Before your listing goes live, we&apos;ll verify your identity and ownership. This protects buyers and builds trust in your listing.
+                </p>
+              )}
               <div className="rounded-xl border border-[#E8E6E1] bg-white/50 p-4 text-sm text-[#1A1A1A] space-y-1">
                 <p className="font-medium text-[#1A1A1A]">{form.address}, {form.city}, {form.state} {form.zipCode}</p>
                 <p>${form.price} • {form.bedrooms} bd, {form.bathrooms} ba, {form.sqft} sqft</p>
                 <p className="text-xs text-[#4A4A4A] line-clamp-2">{form.description}</p>
-                <p className="text-xs text-[#1A1A1A]0">{form.photoUrls.length} photos</p>
+                <p className="text-xs text-[#1A1A1A]">{form.photoUrls.length} photos</p>
               </div>
               <label className="flex cursor-pointer items-start gap-3">
                 <input type="checkbox" checked={form.agreed} onChange={(e) => setForm((f) => ({ ...f, agreed: e.target.checked }))} className="mt-0.5 h-4 w-4 rounded border-[#E8E6E1] text-[#1B4332]" />

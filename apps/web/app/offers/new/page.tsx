@@ -46,6 +46,7 @@ export default function NewOfferPage() {
   const [property, setProperty] = useState<Property | null>(null);
   const [preApprovalChecked, setPreApprovalChecked] = useState(false);
   const [showNotYetMessage, setShowNotYetMessage] = useState(false);
+  const [gate, setGate] = useState<{ kycApproved: boolean; preApprovalApproved: boolean } | null>(null);
 
   const [form, setForm] = useState({
     offer_price: 0,
@@ -69,32 +70,22 @@ export default function NewOfferPage() {
         router.replace('/login?redirect=/offers/new');
         return;
       }
-      if (propertyId) {
-        const [propRes, preApprovalRes] = await Promise.all([
-          supabase
-            .from('properties')
-            .select('id, title, address, city, state, price, seller_id')
-            .eq('id', propertyId)
-            .maybeSingle(),
-          supabase
-            .from('pre_approvals')
-            .select('id')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ]);
+      const [propRes, userProfileRes] = await Promise.all([
+        propertyId
+          ? supabase.from('properties').select('id, title, address, city, state, price, seller_id').eq('id', propertyId).maybeSingle()
+          : Promise.resolve({ data: null }),
+        supabase.from('users').select('kycStatus, preApprovalStatus').eq('id', user.id).maybeSingle(),
+      ]);
+      const profile = userProfileRes.data as { kycStatus?: string; preApprovalStatus?: string } | null;
+      const kycApproved = profile?.kycStatus === 'APPROVED';
+      const preApprovalApproved = profile?.preApprovalStatus === 'APPROVED';
+      setGate({ kycApproved, preApprovalApproved });
+
+      if (propRes.data) {
         const data = propRes.data;
         setProperty((data ?? null) as Property | null);
         if (data?.price) {
           setForm((f) => ({ ...f, offer_price: Number((data as { price: number }).price) }));
-        }
-        if (!preApprovalRes.data && propRes.data) {
-          const redirectUrl = `/offers/new?propertyId=${propertyId}`;
-          router.replace(
-            `/preapproval?redirect=${encodeURIComponent(redirectUrl)}&message=${encodeURIComponent('Get pre-approved first, then return here to submit your offer.')}`
-          );
-          return;
         }
       }
       setLoading(false);
@@ -210,6 +201,37 @@ export default function NewOfferPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950">
         <div className="h-12 w-12 animate-pulse rounded-full border-2 border-emerald-500/40" />
+      </div>
+    );
+  }
+
+  const canSubmitOffer = gate?.kycApproved && gate?.preApprovalApproved;
+  if (gate && !canSubmitOffer) {
+    return (
+      <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
+        <main className="mx-auto w-full max-w-md flex-1 px-4 py-12">
+          <Link href={propertyId ? `/properties/${propertyId}` : '/offers'} className="inline-flex gap-2 text-xs font-medium text-slate-400 hover:text-emerald-400">← Back</Link>
+          <h1 className="mt-6 text-xl font-semibold text-slate-50">Before you can submit an offer</h1>
+          <p className="mt-2 text-sm text-slate-400">Complete these steps to unlock offer submission.</p>
+          <div className="mt-6 space-y-3 rounded-2xl border border-slate-800 bg-slate-950/80 p-6">
+            <div className="flex items-center justify-between gap-4">
+              <span className={gate.kycApproved ? 'text-slate-300' : 'text-slate-500'}>
+                {gate.kycApproved ? '✅' : '⏳'} Identity verified
+              </span>
+              {!gate.kycApproved && (
+                <Link href="/verify" className="text-sm font-semibold text-emerald-400 hover:text-emerald-300">Verify your identity →</Link>
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <span className={gate.preApprovalApproved ? 'text-slate-300' : 'text-slate-500'}>
+                {gate.preApprovalApproved ? '✅' : '⏳'} Pre-approval on file
+              </span>
+              {!gate.preApprovalApproved && (
+                <Link href="/pre-approval" className="text-sm font-semibold text-emerald-400 hover:text-emerald-300">Upload pre-approval →</Link>
+              )}
+            </div>
+          </div>
+        </main>
       </div>
     );
   }

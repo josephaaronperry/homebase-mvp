@@ -6,8 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
-const supabase = getSupabaseClient();
-
 type Step = 1 | 2 | 3 | 4 | 5;
 
 export default function VerifyPage() {
@@ -37,8 +35,10 @@ export default function VerifyPage() {
   });
   const [whyIdOpen, setWhyIdOpen] = useState(false);
   const [preApprovalModalOpen, setPreApprovalModalOpen] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
+    const supabase = getSupabaseClient();
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -51,18 +51,20 @@ export default function VerifyPage() {
   }, [router]);
 
   const handleFileUpload = useCallback(
-    async (bucket: string, path: string, file: File) => {
+    async (bucket: string, pathPrefix: string, file: File) => {
+      const supabase = getSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return '';
       if (file.size > 10 * 1024 * 1024) throw new Error('File must be under 10MB');
       const ext = file.name.split('.').pop() ?? 'pdf';
-      const fullPath = `${user.id}/${path}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage
-        .from(bucket)
-        .upload(fullPath, file, { upsert: true });
-      if (error) throw new Error(error.message);
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fullPath);
-      return urlData.publicUrl;
+      const fullPath = `${user.id}/${pathPrefix}-${Date.now()}.${ext}`;
+      console.log('[KYC] Uploading to', bucket, fullPath);
+      const { error } = await supabase.storage.from(bucket).upload(fullPath, file, { upsert: true });
+      if (error) {
+        console.error('[KYC] Upload failed', error);
+        throw new Error(error.message);
+      }
+      return fullPath;
     },
     []
   );
@@ -71,10 +73,12 @@ export default function VerifyPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const url = await handleFileUpload('kyc-documents', 'id-front', file);
-      setForm((f) => ({ ...f, id_front_url: url }));
+      const path = await handleFileUpload('kyc-documents', 'id-front', file);
+      setForm((f) => ({ ...f, id_front_url: path }));
     } catch (err) {
-      alert((err as Error).message ?? 'Upload failed');
+      const msg = (err as Error).message ?? 'Upload failed';
+      setSubmitError(msg);
+      alert(msg);
     }
   };
 
@@ -82,10 +86,12 @@ export default function VerifyPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const url = await handleFileUpload('kyc-documents', 'id-back', file);
-      setForm((f) => ({ ...f, id_back_url: url }));
+      const path = await handleFileUpload('kyc-documents', 'id-back', file);
+      setForm((f) => ({ ...f, id_back_url: path }));
     } catch (err) {
-      alert((err as Error).message ?? 'Upload failed');
+      const msg = (err as Error).message ?? 'Upload failed';
+      setSubmitError(msg);
+      alert(msg);
     }
   };
 
@@ -93,10 +99,12 @@ export default function VerifyPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const url = await handleFileUpload('kyc-documents', 'proof', file);
-      setForm((f) => ({ ...f, proof_url: url, funds_doc_url: url }));
+      const path = await handleFileUpload('kyc-documents', 'proof', file);
+      setForm((f) => ({ ...f, proof_url: path, funds_doc_url: path }));
     } catch (err) {
-      alert((err as Error).message ?? 'Upload failed');
+      const msg = (err as Error).message ?? 'Upload failed';
+      setSubmitError(msg);
+      alert(msg);
     }
   };
 
@@ -104,36 +112,63 @@ export default function VerifyPage() {
 
   const handleSubmit = async () => {
     if (!form.certified) {
-      alert('Please certify that all information is accurate and complete.');
+      setSubmitError('Please certify that all information is accurate and complete.');
       return;
     }
+    setSubmitError(null);
+    const supabase = getSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    setSubmitting(true);
-    const { error } = await supabase.from('kyc_submissions').insert({
-      user_id: user.id,
-      status: 'PENDING',
-      full_name: form.full_name,
-      dob: form.dob || null,
-      ssn_last4: form.ssn_last4 || null,
-      address: addressString || form.street || null,
-      phone: form.phone || null,
-      id_type: form.id_type,
-      id_front_url: form.id_front_url || null,
-      id_back_url: form.id_back_url || null,
-      funds_doc_url: form.proof_url || form.funds_doc_url || null,
-      proof_url: form.proof_url || null,
-      proof_type: form.proof_type || null,
-      submitted_at: new Date().toISOString(),
-    });
-
-    setSubmitting(false);
-    if (error) {
-      alert(error.message ?? 'Failed to submit');
+    if (!user) {
+      setSubmitError('Not authenticated');
       return;
     }
-    setStep(5);
+
+    try {
+      setSubmitting(true);
+      console.log('[KYC] Submitting for user', user.id);
+
+      const insertPayload = {
+        user_id: user.id,
+        status: 'PENDING',
+        submission_type: 'buyer',
+        full_name: form.full_name,
+        dob: form.dob || null,
+        ssn_last4: form.ssn_last4 || null,
+        address: addressString || form.street || null,
+        phone: form.phone || null,
+        id_type: form.id_type,
+        id_front_url: form.id_front_url || null,
+        id_back_url: form.id_back_url || null,
+        funds_doc_url: form.proof_url || form.funds_doc_url || null,
+        proof_url: form.proof_url || null,
+        proof_type: form.proof_type || null,
+        submitted_at: new Date().toISOString(),
+      };
+      console.log('[KYC] Insert payload', { ...insertPayload, ssn_last4: '****' });
+
+      const { error: insertError } = await supabase.from('kyc_submissions').insert(insertPayload);
+      if (insertError) {
+        console.error('[KYC] Insert failed', insertError);
+        throw new Error(insertError.message);
+      }
+      console.log('[KYC] Insert success');
+
+      const { error: updateError } = await supabase.from('users').update({ kycStatus: 'PENDING' }).eq('id', user.id);
+      if (updateError) {
+        console.warn('[KYC] Could not update kycStatus:', updateError.message);
+      } else {
+        console.log('[KYC] users.kycStatus set to PENDING');
+      }
+
+      setStep(5);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Submission failed';
+      console.error('[KYC Submit]', msg);
+      setSubmitError(msg);
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -179,6 +214,11 @@ export default function VerifyPage() {
         {message && (
           <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {message}
+          </div>
+        )}
+        {submitError && (
+          <div className="mt-4 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">
+            {submitError}
           </div>
         )}
 
