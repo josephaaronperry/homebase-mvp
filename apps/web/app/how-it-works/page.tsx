@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 
 const STEPS = [
   { num: '01', icon: '🔍', title: 'Browse listings', desc: 'Explore verified homes with full data. No agent needed to see listings or schedule tours.', cta: 'Browse homes', href: '/properties' },
-  { num: '02', icon: '📝', title: 'Submit an offer directly', desc: 'Make an offer straight to the seller. No middleman — you submit your price, terms, and message directly.', cta: 'Browse homes', href: '/properties' },
+  { num: '02', icon: '📝', title: 'Submit an offer directly', desc: 'Make an offer straight to the seller. No middleman - you submit your price, terms, and message directly.', cta: 'Browse homes', href: '/properties' },
   { num: '03', icon: '✓', title: 'Seller accepts', desc: 'When the seller accepts your offer, you get notified instantly. No waiting on callbacks.', cta: 'Get verified', href: '/verify' },
   { num: '04', icon: '🏦', title: 'Lenders compete for your business', desc: 'We send your deal to our network of lenders who submit their best rates. You get real competition.', cta: 'Dashboard', href: '/dashboard' },
-  { num: '05', icon: '📋', title: 'You choose your lender', desc: 'Compare rates and pick the best deal. No pressure — you're in control of your financing.', cta: 'Dashboard', href: '/dashboard' },
+  { num: '05', icon: '📋', title: 'You choose your lender', desc: "Compare rates and pick the best deal. No pressure - you're in control of your financing.", cta: 'Dashboard', href: '/dashboard' },
   { num: '06', icon: '🏠', title: 'Close', desc: 'We guide you through every remaining step to closing. One clear timeline, no surprises.', cta: 'Track transaction', href: '/dashboard' },
 ];
 

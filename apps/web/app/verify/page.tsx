@@ -459,9 +459,9 @@ export default function VerifyPage() {
               <h2 className="text-sm font-semibold text-[#1A1A1A]">Review and submit</h2>
               <div className="rounded-xl border border-[#E8E6E1] bg-[#F4F3F0] p-4 text-xs text-[#1A1A1A]">
                 <p><strong className="text-[#4A4A4A]">Name:</strong> {form.full_name}</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">DOB:</strong> {form.dob || '—'}</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">Address:</strong> {addressString || '—'}</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">Phone:</strong> {form.phone || '—'}</p>
+                <p className="mt-1"><strong className="text-[#4A4A4A]">DOB:</strong> {form.dob || '\u2014'}</p>
+                <p className="mt-1"><strong className="text-[#4A4A4A]">Address:</strong> {addressString || '\u2014'}</p>
+                <p className="mt-1"><strong className="text-[#4A4A4A]">Phone:</strong> {form.phone || '\u2014'}</p>
                 <p className="mt-1"><strong className="text-[#4A4A4A]">ID:</strong> {form.id_type.replace(/_/g, ' ')} ✓</p>
                 <p className="mt-1"><strong className="text-[#4A4A4A]">Proof:</strong> {form.proof_type === 'pre_approval' ? 'Pre-approval letter' : 'Proof of funds'} ✓</p>
               </div>

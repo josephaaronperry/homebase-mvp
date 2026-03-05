@@ -70,7 +70,7 @@ export default function PropertiesPage() {
   const [savedIds, setSavedIds] = useState<Set<string | number>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
-  // Filters — Zillow-level
+  // Filters - Zillow-level
   const [minPrice, setMinPrice] = useState(PRICE_MIN);
   const [maxPrice, setMaxPrice] = useState(PRICE_MAX);
   const [beds, setBeds] = useState<number | null>(null); // null = Any, 1-5 = 1+, 2+, etc.
@@ -290,7 +290,7 @@ export default function PropertiesPage() {
               <div>
                 <div className="mb-1 flex items-center justify-between">
                   <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#4A4A4A]">Price range</span>
-                  <span className="text-[11px] text-[#4A4A4A]">{formatPrice(minPrice)} — {formatPrice(maxPrice)}</span>
+                  <span className="text-[11px] text-[#4A4A4A]">{formatPrice(minPrice)} - {formatPrice(maxPrice)}</span>
                 </div>
                 <div className="flex gap-2">
                   <input

@@ -297,8 +297,8 @@ export default function SellVerifyPage() {
               <h2 className="text-sm font-semibold text-[#1A1A1A]">Review and submit</h2>
               <div className="rounded-xl border border-[#E8E6E1] bg-[#F4F3F0] p-4 text-xs text-[#1A1A1A]">
                 <p><strong className="text-[#4A4A4A]">Name:</strong> {form.full_name}</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">Address:</strong> {addressString || '—'}</p>
-                <p className="mt-1"><strong className="text-[#4A4A4A]">Property:</strong> {ownershipAddressString || '—'}</p>
+                <p className="mt-1"><strong className="text-[#4A4A4A]">Address:</strong> {addressString || '\u2014'}</p>
+                <p className="mt-1"><strong className="text-[#4A4A4A]">Property:</strong> {ownershipAddressString || '\u2014'}</p>
                 <p className="mt-1"><strong className="text-[#4A4A4A]">ID:</strong> ✓</p>
                 <p className="mt-1"><strong className="text-[#4A4A4A]">Ownership doc:</strong> ✓</p>
                 <p className="mt-1"><strong className="text-[#4A4A4A]">Signature:</strong> {form.signature}</p>
