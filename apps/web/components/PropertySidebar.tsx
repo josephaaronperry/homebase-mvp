@@ -36,6 +36,7 @@ export function PropertySidebar({
   onSaveClick,
   shareUrl,
 }: Props) {
+  const supabase = getSupabaseClient();
   const router = useRouter();
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [tourModalOpen, setTourModalOpen] = useState(false);
