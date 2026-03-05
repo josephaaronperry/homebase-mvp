@@ -36,7 +36,7 @@ type Property = {
   property_type: string | null;
   description: string | null;
   images: string[] | null;
-  year_built: number | null;
+  yearBuilt: number | null;
   garage: boolean | number | null;
   hoa_fee: number | null;
   created_at: string | null;
@@ -116,7 +116,7 @@ export default function PropertiesPage() {
     const load = async () => {
       setLoading(true);
       setError(null);
-      const select = 'id, title, address, city, state, price, bedrooms, bathrooms, sqft, lot_size, image_url, property_type, description, images, year_built, garage, hoa_fee, created_at';
+      const select = 'id, title, address, city, state, price, bedrooms, bathrooms, sqft, lot_size, image_url, property_type, description, images, yearBuilt, garage, hoa_fee, created_at';
       let q = supabase
         .from('properties')
         .select(select)
@@ -186,7 +186,7 @@ export default function PropertiesPage() {
       }
       if (minSqft != null && minSqft > 0 && (p.sqft ?? 0) < minSqft) return false;
       if (maxSqft != null && maxSqft > 0 && (p.sqft ?? 0) > maxSqft) return false;
-      if (yearBuiltMin != null && yearBuiltMin > 0 && (p.year_built ?? 0) < yearBuiltMin) return false;
+      if (yearBuiltMin != null && yearBuiltMin > 0 && (p.yearBuilt ?? 0) < yearBuiltMin) return false;
       if (parking === '1+' && garageNum(p) < 1) return false;
       if (parking === '2+' && garageNum(p) < 2) return false;
       if (hoa === 'no' && (p.hoa_fee ?? 0) > 0) return false;
