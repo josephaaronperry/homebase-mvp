@@ -31,13 +31,11 @@ export async function POST(req: NextRequest) {
     if (subError) throw subError;
 
     if (userEmail) {
-      const { data: updateData, error: userError } = await supabaseAdmin
-        .from('users')
-        .update({ kycStatus: dbStatus })
-        .eq('email', userEmail)
-        .select();
-      const count = updateData?.length ?? 0;
-      console.log('[KYC Route] users update - data:', updateData, 'error:', userError, 'count:', count);
+      const { error: userError } = await supabaseAdmin.rpc('set_user_kyc_status', {
+        user_email: userEmail,
+        new_status: dbStatus,
+      });
+      console.log('[KYC Route] users update (RPC) - error:', userError);
       if (userError) throw userError;
     }
 
