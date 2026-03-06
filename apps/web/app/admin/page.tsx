@@ -210,24 +210,27 @@ export default function AdminPage() {
 
   const updateKyc = async (id: string, status: 'APPROVED' | 'REJECTED', userId: string, reviewerNotes?: string) => {
     console.log('[KYC Action]', 'action:', status, 'id:', id, 'userId:', userId);
-    const payload: { status: string; reviewed_at: string; reviewer_notes?: string } = { status, reviewed_at: new Date().toISOString() };
-    if (reviewerNotes != null) payload.reviewer_notes = reviewerNotes;
-    const { error } = await supabase.from('kyc_submissions').update(payload).eq('id', id);
-    console.log('[KYC Action] submissions update result:', error);
-    if (error) {
-      setError(error.message);
-      return;
-    }
     const kycRow = kyc.find((r) => r.id === id);
     let email = kycRow?.user_email ?? null;
     if (!email) {
       const { data: emailRow } = await supabase.from('users').select('email').eq('id', userId).maybeSingle();
       email = (emailRow as { email?: string } | null)?.email ?? null;
     }
-    if (email) {
-      const { error: userUpdateError } = await supabase.from('users').update({ kycStatus: status }).eq('email', email);
-      console.log('[KYC Action] users update result:', userUpdateError);
-      if (userUpdateError) console.warn('Could not update users.kycStatus:', userUpdateError.message);
+    const res = await fetch('/api/admin/kyc-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        submissionId: id,
+        status,
+        userEmail: kycRow?.user_email ?? email ?? undefined,
+        reviewerNotes: reviewerNotes ?? undefined,
+      }),
+    });
+    const result = await res.json();
+    console.log('[KYC Action] API result:', result);
+    if (!res.ok) {
+      setError(result.error ?? 'KYC action failed');
+      return;
     }
     setKyc((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     setRejectModal(null);
