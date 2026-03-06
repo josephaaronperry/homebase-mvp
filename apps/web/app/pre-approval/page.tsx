@@ -106,7 +106,7 @@ export default function PreApprovalPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#FAFAF8]">
-        <div className="h-12 w-12 animate-pulse rounded-full border-2 border-[#1B4332]/40" />
+        <div className="h-12 w-12 rounded-full border-2 border-[#1B4332] border-t-transparent animate-spin" />
       </div>
     );
   }

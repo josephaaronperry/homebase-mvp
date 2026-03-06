@@ -37,6 +37,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-[#FAFAF8]">
       <head>
+        <style dangerouslySetInnerHTML={{ __html: `
+  html, body, #__next { background-color: #FAFAF8 !important; }
+  * { box-sizing: border-box; }
+` }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
