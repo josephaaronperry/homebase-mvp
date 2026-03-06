@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 const supabase = getSupabaseClient();
@@ -138,28 +139,41 @@ export default function PipelinePage() {
         ) : (
           <div className="flex flex-col gap-8 lg:flex-row lg:gap-10">
             <div className="min-w-0 flex-1 space-y-3">
-              {PIPELINE_STAGES.map((stage) => {
+              {PIPELINE_STAGES.map((stage, index) => {
                 const isComplete = stage.id < currentStage || (stage.id === 9 && currentStage >= 9);
                 const isActive = stage.id === currentStage;
                 const isFuture = stage.id > currentStage;
                 return (
-                  <div
+                  <motion.div
                     key={stage.id}
                     className={`rounded-2xl border px-4 py-4 shadow-sm ${
                       isActive
                         ? 'border-[#1B4332]/40 bg-[#D1FAE5]'
                         : 'border-[#E8E6E1] bg-white'
                     } ${isFuture ? 'opacity-75' : ''}`}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
                   >
                     <div className="flex items-start gap-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center">
                         {isComplete ? (
-                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1B4332] text-white">✓</span>
+                          <motion.span
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1B4332] text-white"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                          >
+                            ✓
+                          </motion.span>
                         ) : isActive ? (
-                          <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-[#1B4332] text-white">
-                            <span className="absolute inset-0 animate-ping rounded-full bg-[#1B4332] opacity-40" />
+                          <motion.span
+                            className="relative flex h-8 w-8 items-center justify-center rounded-full bg-[#1B4332] text-white"
+                            animate={{ boxShadow: ['0 0 0 0 rgba(27,67,50,0.4)', '0 0 0 12px rgba(27,67,50,0)'] }}
+                            transition={{ repeat: Infinity, duration: 1.5 }}
+                          >
                             <span className="relative block h-2 w-2 rounded-full bg-white" />
-                          </span>
+                          </motion.span>
                         ) : (
                           <span className="flex h-8 w-8 rounded-full border-2 border-[#888888] bg-transparent" />
                         )}
@@ -176,22 +190,29 @@ export default function PipelinePage() {
                         )}
                         {stage.cta && (isActive || isComplete) && (
                           <div className="mt-3">
-                            <Link
-                              href={stage.id === 2 ? `/lenders?dealId=${deal.id}` : stage.cta.href}
-                              className="inline-block rounded-xl bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2D6A4F]"
-                            >
-                              {stage.cta.label}
-                            </Link>
+                            <motion.span whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                              <Link
+                                href={stage.id === 2 ? `/lenders?dealId=${deal.id}` : stage.cta.href}
+                                className="inline-block rounded-xl bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2D6A4F]"
+                              >
+                                {stage.cta.label}
+                              </Link>
+                            </motion.span>
                           </div>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
 
-            <aside className="w-full shrink-0 lg:w-72">
+            <motion.aside
+              className="w-full shrink-0 lg:w-72"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.35, delay: 0.2 }}
+            >
               <div className="rounded-2xl border border-[#E8E6E1] bg-white p-5 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#4A4A4A]">Deal details</p>
                 <dl className="mt-4 space-y-3 text-sm">
@@ -215,7 +236,7 @@ export default function PipelinePage() {
                   </div>
                 </dl>
               </div>
-            </aside>
+            </motion.aside>
           </div>
         )}
       </main>

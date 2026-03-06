@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ToastProvider';
 
@@ -232,9 +233,16 @@ export default function SellOffersPropertyPage() {
           </div>
         )}
 
-        {acceptModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog">
-            <div className="w-full max-w-md rounded-2xl border border-[#E8E6E1] bg-white p-6 shadow-xl">
+        <AnimatePresence>
+          {acceptModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog">
+              <motion.div
+                className="w-full max-w-md rounded-2xl border border-[#E8E6E1] bg-white p-6 shadow-xl"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+              >
               <h3 className="font-display text-lg font-semibold text-[#1A1A1A]">Accept this offer?</h3>
               <p className="mt-2 text-sm text-[#4A4A4A]">
                 Accept this offer from {buyerDisplayName(acceptModal.buyerName)}? This will decline all other offers automatically.
@@ -255,9 +263,10 @@ export default function SellOffersPropertyPage() {
                   Accept offer
                 </button>
               </div>
+              </motion.div>
             </div>
-          </div>
-        )}
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

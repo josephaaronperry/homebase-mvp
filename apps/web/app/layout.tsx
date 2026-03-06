@@ -4,6 +4,7 @@ import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { ToastProvider } from '@/components/ToastProvider';
+import PageTransition from '@/components/PageTransition';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://homebase.example.com'),
@@ -46,7 +47,9 @@ export default function RootLayout({
       <body className="flex min-h-screen flex-col bg-[#FAFAF8]">
         <ToastProvider>
           <Navbar />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1">
+            <PageTransition>{children}</PageTransition>
+          </main>
           <Footer />
         </ToastProvider>
       </body>

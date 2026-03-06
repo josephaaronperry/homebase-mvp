@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 const supabase = getSupabaseClient();
@@ -129,20 +130,33 @@ export default function DashboardOffersPage() {
             <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#1B4332] border-t-transparent" />
           </div>
         ) : offers.length === 0 ? (
-          <div className="mt-8 rounded-2xl border border-[#E8E6E1] bg-white p-8 text-center shadow-sm">
-            <p className="text-5xl">🏡</p>
+          <motion.div
+            className="mt-8 rounded-2xl border border-[#E8E6E1] bg-white p-8 text-center shadow-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <motion.p
+              className="text-5xl"
+              animate={{ y: [0, -8, 0] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+            >
+              🏡
+            </motion.p>
             <p className="mt-4 font-medium text-[#1A1A1A]">No offers yet</p>
             <p className="mt-1 text-sm text-[#4A4A4A]">When you submit an offer on a home, it will appear here.</p>
             <Link href="/properties" className="mt-6 inline-block rounded-xl bg-[#1B4332] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#2D6A4F]">
               Browse homes →
             </Link>
-          </div>
+          </motion.div>
         ) : (
           <div className="mt-6 space-y-4">
-            {offers.map((o) => (
-              <div
+            {offers.map((o, i) => (
+              <motion.div
                 key={o.id}
                 className="flex gap-4 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm"
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.06 }}
               >
                 <div className="h-20 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-[#F4F3F0]">
                   {o.image_url ? (
@@ -168,9 +182,14 @@ export default function DashboardOffersPage() {
                         Submitted {o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '—'}
                       </p>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(o.status)}`}>
+                    <motion.span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(o.status)}`}
+                      initial={{ scale: 0.9 }}
+                      animate={{ scale: 1 }}
+                      transition={{ duration: 0.2 }}
+                    >
                       {statusLabel(o.status)}
-                    </span>
+                    </motion.span>
                   </div>
                   <div className="mt-3">
                     {o.status === 'PENDING' || o.status === 'SUBMITTED' || o.status === 'UNDER_REVIEW' ? (
@@ -209,7 +228,7 @@ export default function DashboardOffersPage() {
                     ) : null}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}

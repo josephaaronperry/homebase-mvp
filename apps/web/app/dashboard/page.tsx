@@ -1,15 +1,39 @@
 // Schema verified against SCHEMA.md - 2025-03-01
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { getStageLabel } from '@/lib/pipeline-stages';
 
 const supabase = getSupabaseClient();
 import { PropertyCard } from '@/components/PropertyCard';
+
+function useCountUp(value: number, duration = 600, enabled = true) {
+  const [display, setDisplay] = useState(0);
+  const prevValue = useRef(0);
+  useEffect(() => {
+    if (!enabled) {
+      setDisplay(value);
+      prevValue.current = value;
+      return;
+    }
+    const start = prevValue.current;
+    prevValue.current = value;
+    const startTime = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - (1 - t) * (1 - t);
+      setDisplay(Math.round(start + (value - start) * eased));
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [value, duration, enabled]);
+  return display;
+}
 
 type SavedPreview = {
   id: string | number;
@@ -88,6 +112,9 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [kycStatus, setKycStatus] = useState<string | null>(null);
   const [preApprovalStatus, setPreApprovalStatus] = useState<string | null>(null);
+
+  const displaySaved = useCountUp(stats.saved, 600, !loading);
+  const displayTotal = useCountUp(stats.total, 600, !loading);
 
   useEffect(() => {
     const load = async () => {
@@ -373,12 +400,17 @@ export default function DashboardPage() {
               <p className="text-sm font-medium text-amber-800">
                 Complete identity verification to unlock making offers on properties.
               </p>
-              <Link
-                href="/verify"
-                className="flex-shrink-0 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600"
+              <motion.div
+                animate={{ scale: [1, 1.03, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
               >
-                Verify now
-              </Link>
+                <Link
+                  href="/verify"
+                  className="inline-block rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600"
+                >
+                  Verify now
+                </Link>
+              </motion.div>
             </div>
           </div>
         )}
@@ -411,47 +443,62 @@ export default function DashboardPage() {
 
         {/* Empty state: getting started */}
         {!loading && stats.saved === 0 && showings.length === 0 && offers.length === 0 && !acceptedOffer && (
-          <div className="mb-8 rounded-3xl border border-[#E8E6E1] bg-white p-8 shadow-sm">
+          <motion.div
+            className="mb-8 rounded-3xl border border-[#E8E6E1] bg-white p-8 shadow-sm"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
             <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-[#1A1A1A]">Getting started</h2>
             <p className="mt-1 text-sm text-[#4A4A4A]">Follow these steps to find and secure your next home.</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">1</span>
-                <div>
-                  <div className="font-medium text-[#1A1A1A]">Browse homes</div>
-                  <div className="text-xs text-[#4A4A4A]">Explore listings in your market.</div>
-                </div>
-              </Link>
-              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">2</span>
-                <div>
-                  <div className="font-medium text-[#1A1A1A]">Save favorites</div>
-                  <div className="text-xs text-[#4A4A4A]">Heart homes to revisit later.</div>
-                </div>
-              </Link>
-              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">3</span>
-                <div>
-                  <div className="font-medium text-[#1A1A1A]">Schedule a tour</div>
-                  <div className="text-xs text-[#4A4A4A]">Book in-person or virtual showings.</div>
-                </div>
-              </Link>
-              <Link href="/verify" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">4</span>
-                <div>
-                  <div className="font-medium text-[#1A1A1A]">Get verified</div>
-                  <div className="text-xs text-[#4A4A4A]">Complete identity verification.</div>
-                </div>
-              </Link>
-              <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">5</span>
-                <div>
-                  <div className="font-medium text-[#1A1A1A]">Make an offer</div>
-                  <div className="text-xs text-[#4A4A4A]">Submit offers from any property.</div>
-                </div>
-              </Link>
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+                <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">1</span>
+                  <div>
+                    <div className="font-medium text-[#1A1A1A]">Browse homes</div>
+                    <div className="text-xs text-[#4A4A4A]">Explore listings in your market.</div>
+                  </div>
+                </Link>
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">2</span>
+                  <div>
+                    <div className="font-medium text-[#1A1A1A]">Save favorites</div>
+                    <div className="text-xs text-[#4A4A4A]">Heart homes to revisit later.</div>
+                  </div>
+                </Link>
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+                <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">3</span>
+                  <div>
+                    <div className="font-medium text-[#1A1A1A]">Schedule a tour</div>
+                    <div className="text-xs text-[#4A4A4A]">Book in-person or virtual showings.</div>
+                  </div>
+                </Link>
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                <Link href="/verify" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">4</span>
+                  <div>
+                    <div className="font-medium text-[#1A1A1A]">Get verified</div>
+                    <div className="text-xs text-[#4A4A4A]">Complete identity verification.</div>
+                  </div>
+                </Link>
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+                <Link href="/properties" className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-[family-name:var(--font-body)] text-sm font-semibold text-white">5</span>
+                  <div>
+                    <div className="font-medium text-[#1A1A1A]">Make an offer</div>
+                    <div className="text-xs text-[#4A4A4A]">Submit offers from any property.</div>
+                  </div>
+                </Link>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Active transaction card */}
@@ -553,7 +600,12 @@ export default function DashboardPage() {
 
         <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
           <div className="space-y-4">
-            <div className="rounded-3xl border border-[#E8E6E1] bg-white p-5 shadow-sm">
+            <motion.div
+              className="rounded-3xl border border-[#E8E6E1] bg-white p-5 shadow-sm"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#1B4332]">
                 Overview
               </p>
@@ -570,7 +622,7 @@ export default function DashboardPage() {
                     Saved homes
                   </div>
                   <div className="mt-1 font-[family-name:var(--font-mono)] text-2xl font-semibold text-[#1A1A1A]">
-                    {loading ? '—' : stats.saved}
+                    {loading ? '—' : displaySaved}
                   </div>
                 </div>
                 <div className="rounded-2xl border border-[#E8E6E1] bg-[#F4F3F0] px-4 py-3">
@@ -578,11 +630,11 @@ export default function DashboardPage() {
                     Total listings
                   </div>
                   <div className="mt-1 font-[family-name:var(--font-mono)] text-2xl font-semibold text-[#1A1A1A]">
-                    {loading ? '—' : stats.total}
+                    {loading ? '—' : displayTotal}
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             <div className="grid gap-3 md:grid-cols-2">
               <Link

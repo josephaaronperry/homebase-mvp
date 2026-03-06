@@ -37,10 +37,19 @@ export async function POST(request: NextRequest) {
       .eq('property_id', propertyId)
       .single();
     if (offerErr || !offer) {
-      return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Offer not found', code: 'OFFER_NOT_FOUND' }, { status: 404 });
     }
     const buyerId = (offer as { userId: string }).userId;
     const amount = (offer as { offerPrice: number | null }).offerPrice ?? 0;
+
+    const { data: existingDeal } = await admin
+      .from('deals')
+      .select('id')
+      .eq('offer_id', offerId)
+      .maybeSingle();
+    if (existingDeal) {
+      return NextResponse.json({ error: 'A deal already exists for this offer', code: 'DEAL_ALREADY_EXISTS' }, { status: 400 });
+    }
 
     const { data: prop, error: propErr } = await admin
       .from('properties')
@@ -139,8 +148,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
+    console.error('[API offers/accept]', err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Failed to accept offer' },
+      { error: err instanceof Error ? err.message : 'Failed to accept offer', code: 'SERVER_ERROR' },
       { status: 500 }
     );
   }
