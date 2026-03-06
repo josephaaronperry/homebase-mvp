@@ -55,15 +55,26 @@ export async function POST(request: NextRequest) {
     await admin.from('offers').update({ status: 'ACCEPTED' }).eq('id', offerId);
     await admin.from('offers').update({ status: 'REJECTED' }).eq('property_id', propertyId).neq('id', offerId);
 
-    await admin.from('deals').insert({
-      property_id: propertyId,
-      offer_id: offerId,
-      buyer_id: buyerId,
-      seller_id: user.id,
-      agreed_price: amount,
-      status: 'active',
-      updated_at: new Date().toISOString(),
-    });
+    const { data: newDeal, error: dealErr } = await admin
+      .from('deals')
+      .insert({
+        property_id: propertyId,
+        offer_id: offerId,
+        buyer_id: buyerId,
+        seller_id: user.id,
+        agreed_price: amount,
+        status: 'pending_lender',
+        updated_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+    if (dealErr || !newDeal) {
+      return NextResponse.json({ error: 'Failed to create deal' }, { status: 500 });
+    }
+    const dealId = (newDeal as { id: string }).id;
+
+    // SPEC-4: Mark property as under contract
+    await admin.from('properties').update({ status: 'under_contract' }).eq('id', propertyId);
 
     const { data: pipelines } = await admin
       .from('buying_pipelines')
@@ -96,9 +107,9 @@ export async function POST(request: NextRequest) {
     await createNotification(
       buyerId,
       'offer_accepted',
-      'Your offer was accepted! 🎉',
-      `Your offer of ${formattedAmount} on ${address} was accepted. Select your lender to continue.`,
-      `/dashboard/lenders?propertyId=${propertyId}`
+      'Your offer was accepted!',
+      'Your offer was accepted! Select your lender to continue.',
+      `/lenders?dealId=${dealId}`
     );
 
     const [buyerAuth, sellerAuth] = await Promise.all([

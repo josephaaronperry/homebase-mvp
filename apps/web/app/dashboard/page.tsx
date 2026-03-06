@@ -477,7 +477,7 @@ export default function DashboardPage() {
           </Link>
         )}
 
-        {/* Active deals */}
+        {/* Active deals — link to pipeline (SPEC-5) */}
         {deals.length > 0 && (
           <div className="mb-6 rounded-3xl border border-[#E8E6E1] bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#1B4332]">
@@ -490,7 +490,7 @@ export default function DashboardPage() {
               {deals.map((deal) => (
                 <Link
                   key={deal.id}
-                  href={`/dashboard/buying/${deal.property_id}`}
+                  href="/dashboard/pipeline"
                   className="flex items-center justify-between rounded-2xl border border-[#E8E6E1] bg-[#F4F3F0] px-4 py-3 hover:border-[#1B4332]"
                 >
                   <div>
@@ -505,6 +505,12 @@ export default function DashboardPage() {
                 </Link>
               ))}
             </div>
+            <Link
+              href="/dashboard/pipeline"
+              className="mt-4 inline-block rounded-xl bg-[#1B4332] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2D6A4F]"
+            >
+              Track pipeline →
+            </Link>
           </div>
         )}
 

@@ -67,6 +67,19 @@ export default function SellDashboardPage() {
   const [dealByProperty, setDealByProperty] = useState<DealByProperty>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
+
+  const toggleListingStatus = async (listingId: string, currentStatus: string) => {
+    const next = currentStatus === 'active' ? 'pending_review' : 'active';
+    setTogglingStatus(listingId);
+    const { error: err } = await supabase.from('seller_listings').update({ status: next }).eq('id', listingId);
+    setTogglingStatus(null);
+    if (err) {
+      setError(err.message ?? 'Failed to update status');
+      return;
+    }
+    setListings((prev) => prev.map((l) => (l.id === listingId ? { ...l, status: next } : l)));
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -190,9 +203,14 @@ export default function SellDashboardPage() {
                     <span className="font-[family-name:var(--font-mono)] text-xs text-[#4A4A4A]">
                       ${l.price?.toLocaleString() ?? '—'}
                     </span>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusClass(l.status)}`}>
-                      {l.status === 'active' ? 'ACTIVE' : l.status === 'sold' ? 'SOLD' : l.status === 'pending_review' ? 'DRAFT' : statusLabel(l.status)}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => (l.status === 'active' || l.status === 'pending_review') && !dealPropertyIds.has(l.property_id) ? toggleListingStatus(l.id, l.status) : undefined}
+                      disabled={togglingStatus === l.id || dealPropertyIds.has(l.property_id) || (l.status !== 'active' && l.status !== 'pending_review')}
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusClass(l.status)} ${(l.status === 'active' || l.status === 'pending_review') && !dealPropertyIds.has(l.property_id) ? 'cursor-pointer hover:opacity-90' : ''} disabled:cursor-default disabled:opacity-100`}
+                    >
+                      {togglingStatus === l.id ? '…' : l.status === 'active' ? 'ACTIVE' : l.status === 'sold' ? 'SOLD' : l.status === 'pending_review' ? 'DRAFT' : statusLabel(l.status)}
+                    </button>
                     {l.created_at && (
                       <span className="text-[11px] text-[#888888]">Listed {new Date(l.created_at).toLocaleDateString()}</span>
                     )}
