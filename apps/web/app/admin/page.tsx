@@ -218,9 +218,17 @@ export default function AdminPage() {
       setError(error.message);
       return;
     }
-    const { error: userUpdateError } = await supabase.from('users').update({ kycStatus: status }).eq('id', userId.toString());
-    console.log('[KYC Action] users update result:', userUpdateError);
-    if (userUpdateError) console.warn('Could not update users.kycStatus:', userUpdateError.message);
+    const kycRow = kyc.find((r) => r.id === id);
+    let email = kycRow?.user_email ?? null;
+    if (!email) {
+      const { data: emailRow } = await supabase.from('users').select('email').eq('id', userId).maybeSingle();
+      email = (emailRow as { email?: string } | null)?.email ?? null;
+    }
+    if (email) {
+      const { error: userUpdateError } = await supabase.from('users').update({ kycStatus: status }).eq('email', email);
+      console.log('[KYC Action] users update result:', userUpdateError);
+      if (userUpdateError) console.warn('Could not update users.kycStatus:', userUpdateError.message);
+    }
     setKyc((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     setRejectModal(null);
     setRejectReason('');
