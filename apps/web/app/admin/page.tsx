@@ -94,7 +94,7 @@ export default function AdminPage() {
       }
       const email = user.email ?? '';
       const inAllowlist = ADMIN_EMAILS.includes(email);
-      const { data: profile } = await supabase.from('users').select('is_admin').eq('id', user.id).maybeSingle();
+      const { data: profile } = await supabase.from('users').select('is_admin').eq('email', email).maybeSingle();
       const isAdmin = (profile as { is_admin: boolean | null } | null)?.is_admin;
       if (!inAllowlist && isAdmin === false) {
         router.replace('/dashboard');
@@ -122,7 +122,7 @@ export default function AdminPage() {
         const userIds = Array.from(new Set(offerList.map((o) => o.userId)));
         const propIds = Array.from(new Set(offerList.map((o) => o.property_id).filter(Boolean))) as string[];
         const [profsRes, propsRes] = await Promise.all([
-          userIds.length > 0 ? supabase.from('users').select('id, email').in('id', userIds) : Promise.resolve({ data: [] }),
+          userIds.length > 0 ? supabase.from('users').select('id, email').in('id', userIds.map((id) => id.toString())) : Promise.resolve({ data: [] }),
           propIds.length > 0 ? supabase.from('properties').select('id, address').in('id', propIds) : Promise.resolve({ data: [] }),
         ]);
         const profileMap = new Map((profsRes.data ?? []).map((p: { id: string; email: string | null }) => [p.id, p.email ?? '']));
@@ -144,7 +144,7 @@ export default function AdminPage() {
           const kycUserIds = Array.from(new Set(kycList.map((k) => k.user_id)));
           const kycProfileMap = new Map<string, string>();
           if (kycUserIds.length > 0) {
-            const { data: kp } = await supabase.from('users').select('id, email').in('id', kycUserIds);
+            const { data: kp } = await supabase.from('users').select('id, email').in('id', kycUserIds.map((id) => id.toString()));
             (kp ?? []).forEach((p: { id: string; email: string | null }) => { kycProfileMap.set(p.id, p.email ?? ''); });
           }
           setKyc(kycList.map((k) => ({ ...k, user_email: kycProfileMap.get(k.user_id) ?? null })));
@@ -159,7 +159,7 @@ export default function AdminPage() {
           const lenderIds = dealList.map((d) => d.lender_id).filter(Boolean) as string[];
           const [propData, profileData, lenderData, pipelineData] = await Promise.all([
             supabase.from('properties').select('id, address').in('id', propIds),
-            supabase.from('users').select('id, email').in('id', buyerSellerIds),
+            supabase.from('users').select('id, email').in('id', buyerSellerIds.map((id) => id.toString())),
             lenderIds.length > 0 ? supabase.from('lenders').select('id, name').in('id', lenderIds) : Promise.resolve({ data: [] }),
             supabase.from('buying_pipelines').select('user_id, property_id, current_stage').in('property_id', propIds),
           ]);
@@ -216,7 +216,7 @@ export default function AdminPage() {
       setError(error.message);
       return;
     }
-    const { error: userUpdateError } = await supabase.from('users').update({ kycStatus: status }).eq('id', userId);
+    const { error: userUpdateError } = await supabase.from('users').update({ kycStatus: status }).eq('id', userId.toString());
     if (userUpdateError) console.warn('Could not update users.kycStatus:', userUpdateError.message);
     setKyc((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     setRejectModal(null);
