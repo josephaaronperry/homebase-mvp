@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { getStageLabel } from '@/lib/pipeline-stages';
+import { Check, Search, Heart } from 'lucide-react';
 
 const supabase = getSupabaseClient();
 import { PropertyCard } from '@/components/PropertyCard';
@@ -378,7 +379,7 @@ export default function DashboardPage() {
             <div className="mt-1 flex items-center gap-2">
               {isVerified ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1B4332]/15 px-3 py-1 text-xs font-semibold text-[#1B4332]">
-                  ✓ Identity verified
+                  <Check className="h-3.5 w-3.5 shrink-0" /> Identity verified
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F4F3F0] px-3 py-1 text-xs font-medium text-[#4A4A4A]">
@@ -397,11 +398,18 @@ export default function DashboardPage() {
             </p>
           </div>
         )}
-        {kycStatus === 'PENDING' || kycStatus === 'UNDER_REVIEW' ? (
+        {kycStatus === 'SUBMITTED' || kycStatus === 'PENDING' || kycStatus === 'UNDER_REVIEW' ? (
           <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4">
             <p className="text-sm font-medium text-amber-800">
-              Your verification is under review — usually within 24 hours.
+              Verification under review — usually within 24 hours.
             </p>
+          </div>
+        ) : kycStatus === 'FAILED' ? (
+          <div className="mb-6 rounded-2xl border border-rose-300 bg-rose-50 px-5 py-4">
+            <p className="text-sm font-medium text-rose-800">Verification failed — please resubmit.</p>
+            <Link href="/dashboard/kyc" className="mt-3 inline-block rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">
+              Resubmit verification
+            </Link>
           </div>
         ) : !isVerified && (
           <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4">
@@ -414,7 +422,7 @@ export default function DashboardPage() {
                 transition={{ repeat: Infinity, duration: 2 }}
               >
                 <Link
-                  href="/verify"
+                  href="/dashboard/kyc"
                   className="inline-block rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600"
                 >
                   Verify now
@@ -453,7 +461,7 @@ export default function DashboardPage() {
               { n: 1, title: 'Browse homes', subtitle: 'Explore listings in your market.', href: '/properties' },
               { n: 2, title: 'Save favorites', subtitle: 'Heart homes to revisit later.', href: '/properties' },
               { n: 3, title: 'Schedule a tour', subtitle: 'Book in-person or virtual showings.', href: '/properties' },
-              { n: 4, title: 'Get verified', subtitle: 'Complete identity verification.', href: '/verify' },
+              { n: 4, title: 'Get verified', subtitle: 'Complete identity verification.', href: '/dashboard/kyc' },
               { n: 5, title: 'Make an offer', subtitle: 'Submit offers from any property.', href: '/properties' },
             ].map((step, i) => (
               <motion.div
@@ -621,7 +629,7 @@ export default function DashboardPage() {
                 href="/properties"
                 className="flex items-center gap-3 rounded-2xl border border-[#E8E6E1] bg-white px-4 py-3 shadow-sm hover:border-[#1B4332]"
               >
-                <span className="text-lg">🔍</span>
+                <Search className="h-5 w-5 shrink-0 text-[#1A1A1A]" />
                 <div>
                   <div className="text-sm font-medium text-[#1A1A1A]">
                     Browse listings
@@ -635,7 +643,7 @@ export default function DashboardPage() {
                 href="/saved"
                 className="flex items-center gap-3 rounded-2xl border border-[#E8E6E1] bg-white px-4 py-3 shadow-sm hover:border-[#1B4332]"
               >
-                <span className="text-lg">❤️</span>
+                <Heart className="h-5 w-5 shrink-0 text-[#DC2626]" />
                 <div>
                   <div className="text-sm font-medium text-[#1A1A1A]">
                     Saved homes
