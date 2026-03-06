@@ -208,14 +208,17 @@ export default function AdminPage() {
   };
 
   const updateKyc = async (id: string, status: 'APPROVED' | 'REJECTED', userId: string, reviewerNotes?: string) => {
+    console.log('[KYC Action]', 'action:', status, 'id:', id, 'userId:', userId);
     const payload: { status: string; reviewed_at: string; reviewer_notes?: string } = { status, reviewed_at: new Date().toISOString() };
     if (reviewerNotes != null) payload.reviewer_notes = reviewerNotes;
     const { error } = await supabase.from('kyc_submissions').update(payload).eq('id', id);
+    console.log('[KYC Action] submissions update result:', error);
     if (error) {
       setError(error.message);
       return;
     }
     const { error: userUpdateError } = await supabase.from('users').update({ kycStatus: status }).eq('id', userId.toString());
+    console.log('[KYC Action] users update result:', userUpdateError);
     if (userUpdateError) console.warn('Could not update users.kycStatus:', userUpdateError.message);
     setKyc((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     setRejectModal(null);
