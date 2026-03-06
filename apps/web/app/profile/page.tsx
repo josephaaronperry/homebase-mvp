@@ -180,7 +180,7 @@ export default function ProfilePage() {
             <form onSubmit={handleChangePassword} className="mt-3 space-y-3">
               <input type="password" value={password.new} onChange={(e) => setPassword((p) => ({ ...p, new: e.target.value }))} placeholder="New password" className="w-full rounded-xl border border-[#E8E6E1] bg-white px-4 py-3 text-[#1A1A1A] placeholder:text-[#888888] focus:border-[#1B4332] focus:outline-none" minLength={8} />
               <input type="password" value={password.confirm} onChange={(e) => setPassword((p) => ({ ...p, confirm: e.target.value }))} placeholder="Confirm new password" className="w-full rounded-xl border border-[#E8E6E1] bg-white px-4 py-3 text-[#1A1A1A] placeholder:text-[#888888] focus:border-[#1B4332] focus:outline-none" />
-              <button type="submit" disabled={passwordSaving || !password.new || !password.confirm} className="rounded-xl bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2D6A4F] disabled:opacity-50">
+              <button type="submit" disabled={passwordSaving || !password.new || !password.confirm} className="rounded-xl bg-[#1B4332] px-6 py-3 text-sm font-semibold text-white hover:bg-[#2D6A4F] disabled:opacity-50">
                 {passwordSaving ? 'Updating…' : 'Update password'}
               </button>
             </form>

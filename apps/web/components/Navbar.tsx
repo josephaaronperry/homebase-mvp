@@ -57,12 +57,15 @@ export function Navbar() {
   }, [fetchNotifications]);
 
   useEffect(() => {
-    const get = async () => {
-      const { data: { user: u } } = await supabase.auth.getUser();
-      setUser(u ?? null);
+    const setUserFromSession = (session: { user: { id: string; email?: string; user_metadata?: { full_name?: string } } } | null) => {
+      setUser(session?.user ?? null);
     };
-    get();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => get());
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserFromSession(session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserFromSession(session);
+    });
     return () => subscription.unsubscribe();
   }, []);
 

@@ -132,8 +132,8 @@ export default function DashboardPage() {
       setUserName((user.user_metadata as { full_name?: string })?.full_name ?? user.email ?? 'there');
 
       const [
-        { count: totalProperties },
-        { count: savedCount },
+        totalRes,
+        savedCountRes,
         savedRes,
         showingsRes,
         offersRes,
@@ -185,15 +185,18 @@ export default function DashboardPage() {
         supabase.from('deals').select('id, property_id, agreed_price, status').eq('buyer_id', user.id),
       ]);
 
+      const totalProperties = (totalRes as { count?: number })?.count;
+      const savedCount = (savedCountRes as { count?: number })?.count;
+      setStats({
+        total: totalProperties ?? 0,
+        saved: savedCount ?? 0,
+      });
+
       if (savedRes.error || showingsRes.error || offersRes.error || pipelinesRes.error) {
         setError(savedRes.error?.message ?? showingsRes.error?.message ?? offersRes.error?.message ?? pipelinesRes.error?.message ?? 'Failed to load dashboard');
         setLoading(false);
         return;
       }
-      setStats({
-        total: totalProperties ?? 0,
-        saved: savedCount ?? 0,
-      });
       const savedRows = (savedRes.data ?? []) as { id: string; propertyId: string }[];
       if (savedRows.length > 0) {
         const propertyIds = savedRows.map((r) => r.propertyId);
@@ -268,8 +271,10 @@ export default function DashboardPage() {
       setKycStatus(kyc);
       setIsVerified(kyc === 'APPROVED');
 
-      const { data: userProfile } = await supabase.from('users').select('preApprovalStatus').eq('id', user.id).maybeSingle();
-      setPreApprovalStatus((userProfile as { preApprovalStatus?: string } | null)?.preApprovalStatus ?? 'NONE');
+      const { data: userProfile } = await supabase.from('users').select('fullName, preApprovalStatus').eq('email', user.email ?? '').maybeSingle();
+      const profile = userProfile as { fullName?: string | null; preApprovalStatus?: string } | null;
+      if (profile?.fullName) setUserName(profile.fullName);
+      setPreApprovalStatus(profile?.preApprovalStatus ?? 'NONE');
 
       const viewedIds = (viewedRes.data ?? [])
         .map((v: { property_id: string }) => v.property_id)
@@ -435,13 +440,44 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Getting started — always visible */}
+        <section className="mb-8 rounded-2xl border border-[#E8E6E1] bg-white p-6 shadow-sm">
+          <h2 className="font-display text-lg font-semibold text-[#1A1A1A]">Getting started</h2>
+          <p className="mt-1 text-sm text-[#4A4A4A]">Follow these steps to find and secure your next home.</p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { n: 1, title: 'Browse homes', subtitle: 'Explore listings in your market.', href: '/properties' },
+              { n: 2, title: 'Save favorites', subtitle: 'Heart homes to revisit later.', href: '/properties' },
+              { n: 3, title: 'Schedule a tour', subtitle: 'Book in-person or virtual showings.', href: '/properties' },
+              { n: 4, title: 'Get verified', subtitle: 'Complete identity verification.', href: '/verify' },
+              { n: 5, title: 'Make an offer', subtitle: 'Submit offers from any property.', href: '/properties' },
+            ].map((step, i) => (
+              <motion.div
+                key={step.n}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3, delay: i * 0.05 }}
+              >
+                <Link href={step.href} className="flex items-start gap-3 rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm hover:border-[#1B4332]">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B4332] font-body text-sm font-semibold text-white">{step.n}</span>
+                  <div>
+                    <div className="font-medium text-[#1A1A1A]">{step.title}</div>
+                    <div className="text-xs text-[#4A4A4A]">{step.subtitle}</div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
         {error && (
           <div className="mb-6 rounded-2xl border border-rose-400 bg-rose-50 px-5 py-4 text-sm text-rose-800">
             {error}
           </div>
         )}
 
-        {/* Empty state: getting started */}
+        {/* Empty state: getting started (when no activity) */}
         {!loading && stats.saved === 0 && showings.length === 0 && offers.length === 0 && !acceptedOffer && (
           <motion.div
             className="mb-8 rounded-3xl border border-[#E8E6E1] bg-white p-8 shadow-sm"
