@@ -22,6 +22,7 @@ export default function PreApprovalPage() {
   const [file, setFile] = useState<File | null>(null);
   const [lenderName, setLenderName] = useState('');
   const [loanAmount, setLoanAmount] = useState('');
+  const [maxApprovedAmount, setMaxApprovedAmount] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
   const [liquidAssets, setLiquidAssets] = useState('');
 
@@ -52,6 +53,10 @@ export default function PreApprovalPage() {
       setError('Please upload a document');
       return;
     }
+    if (path === 'pre_approval_letter' && !maxApprovedAmount.trim()) {
+      setError('Please enter the maximum approved amount');
+      return;
+    }
     const supabase = getSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -66,6 +71,11 @@ export default function PreApprovalPage() {
       if (uploadErr) throw new Error(uploadErr.message);
 
       const proofType = path === 'cash_funds' ? 'cash_funds' : 'pre_approval_letter';
+      const preApprovalAmountNum = path === 'pre_approval_letter' && maxApprovedAmount
+        ? parseFloat(maxApprovedAmount.replace(/[^0-9.]/g, '')) || null
+        : path === 'cash_funds' && liquidAssets
+          ? parseFloat(liquidAssets.replace(/[^0-9.]/g, '')) || null
+          : null;
       const { error: insertErr } = await supabase.from('kyc_submissions').insert({
         user_id: user.id,
         status: 'PENDING',
@@ -74,11 +84,12 @@ export default function PreApprovalPage() {
         proof_url: storagePath,
         full_name: null,
         submitted_at: new Date().toISOString(),
+        pre_approval_amount: preApprovalAmountNum,
       });
       if (insertErr) throw new Error(insertErr.message);
 
       const updatePayload: { preApprovalStatus: string; preApprovalAmount?: number; preApprovalExpiry?: string; preApprovalLender?: string } = { preApprovalStatus: 'PENDING' };
-      if (path === 'pre_approval_letter' && loanAmount) updatePayload.preApprovalAmount = parseFloat(loanAmount.replace(/[^0-9.]/g, '')) || undefined;
+      if (path === 'pre_approval_letter' && (maxApprovedAmount || loanAmount)) updatePayload.preApprovalAmount = parseFloat((maxApprovedAmount || loanAmount).replace(/[^0-9.]/g, '')) || undefined;
       if (path === 'pre_approval_letter' && expirationDate) updatePayload.preApprovalExpiry = expirationDate;
       if (path === 'pre_approval_letter' && lenderName) updatePayload.preApprovalLender = lenderName;
       if (path === 'cash_funds' && liquidAssets) updatePayload.preApprovalAmount = parseFloat(liquidAssets.replace(/[^0-9.]/g, '')) || undefined;
@@ -155,7 +166,11 @@ export default function PreApprovalPage() {
                   <input value={lenderName} onChange={(e) => setLenderName(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm" placeholder="e.g. Chase Home Lending" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-[#4A4A4A]">Loan amount</label>
+                  <label className="block text-xs font-medium uppercase tracking-wider text-[#4A4A4A]">Maximum approved amount *</label>
+                  <input type="text" inputMode="numeric" value={maxApprovedAmount} onChange={(e) => setMaxApprovedAmount(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm" placeholder="$450,000" required={path === 'pre_approval_letter'} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider text-[#4A4A4A]">Loan amount (optional)</label>
                   <input value={loanAmount} onChange={(e) => setLoanAmount(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[#E8E6E1] bg-white px-3 text-sm" placeholder="e.g. 500000" />
                 </div>
                 <div>
@@ -188,7 +203,7 @@ export default function PreApprovalPage() {
 
             <div className="mt-8 flex gap-3">
               <button type="button" onClick={() => { setStep('choose'); setPath(null); setFile(null); setError(null); }} className="rounded-xl border border-[#E8E6E1] px-4 py-2.5 text-sm font-semibold text-[#4A4A4A]">Back</button>
-              <button type="button" onClick={handleSubmit} disabled={submitting || !file} className="rounded-xl bg-[#1B4332] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">{submitting ? 'Submitting…' : 'Submit'}</button>
+              <button type="button" onClick={handleSubmit} disabled={submitting || !file || (path === 'pre_approval_letter' && !maxApprovedAmount.trim())} className="rounded-xl bg-[#1B4332] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2D5A47] disabled:opacity-50">{submitting ? 'Submitting…' : 'Submit'}</button>
             </div>
           </>
         )}

@@ -62,11 +62,11 @@ const GUEST_SAVED_KEY = 'homebase_saved';
 export default function PropertiesPage() {
   const searchParams = useSearchParams();
   const toast = useToast();
-  const initialQ = searchParams.get('q') ?? '';
+  const searchParam = searchParams.get('search') ?? searchParams.get('q') ?? '';
   const [allProperties, setAllProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState(initialQ);
+  const [searchQuery, setSearchQuery] = useState(searchParam);
   const [savedIds, setSavedIds] = useState<Set<string | number>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
@@ -81,10 +81,13 @@ export default function PropertiesPage() {
   const [yearBuiltMin, setYearBuiltMin] = useState<number | null>(null);
   const [parking, setParking] = useState<'any' | '1+' | '2+'>('any');
   const [hoa, setHoa] = useState<'any' | 'no' | 'yes'>('any');
-  const [keywords, setKeywords] = useState('');
+  const [keywords, setKeywords] = useState(searchParam);
   const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc' | 'beds_desc' | 'sqft_desc'>('newest');
 
-  useEffect(() => setSearchQuery(initialQ), [initialQ]);
+  useEffect(() => {
+    setSearchQuery(searchParam);
+    setKeywords(searchParam);
+  }, [searchParam]);
 
   useEffect(() => {
     const loadSaved = async () => {

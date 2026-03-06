@@ -5,6 +5,12 @@ import { useState } from 'react';
 const MIN_PRICE = 100_000;
 const MAX_PRICE = 2_000_000;
 const STEP = 25_000;
+
+function formatSavingsPrice(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
+  return `$${n}`;
+}
 const FLAT_FEE = 4_000;
 const COMMISSION_RATE = 0.06;
 
@@ -57,11 +63,11 @@ export function SavingsCalculator({ variant = 'dark' }: SavingsCalculatorProps) 
             className="absolute inset-0 h-3 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[var(--color-brand-accent)] [&::-webkit-slider-thumb]:shadow-lg"
           />
           <div className="mt-4 flex justify-between font-body text-sm text-[var(--color-text-muted)]">
-            <span>${(MIN_PRICE / 1000).toFixed(0)}k</span>
+            <span>{formatSavingsPrice(MIN_PRICE)}</span>
             <span className="font-semibold text-[var(--color-text-inverse)]">
-              ${(price / 1000).toFixed(0)}k
+              {formatSavingsPrice(price)}
             </span>
-            <span>${(MAX_PRICE / 1000).toFixed(0)}k</span>
+            <span>{formatSavingsPrice(MAX_PRICE)}</span>
           </div>
         </div>
 

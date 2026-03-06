@@ -51,6 +51,7 @@ type KycRow = {
   proof_url: string | null;
   submitted_at: string | null;
   user_email: string | null;
+  pre_approval_amount: number | null;
 };
 
 type DealRow = {
@@ -107,7 +108,7 @@ export default function AdminPage() {
           supabase.from('properties').select('id, address, city, state, price, status').order('createdAt', { ascending: false }),
           supabase.from('users').select('id, fullName, email, phone, createdAt').order('createdAt', { ascending: false }),
           supabase.from('offers').select('id, userId, property_id, offerPrice, status').order('createdAt', { ascending: false }),
-          supabase.from('kyc_submissions').select('id, user_id, status, submission_type, full_name, proof_type, id_front_url, proof_url, submitted_at').order('submitted_at', { ascending: false }),
+          supabase.from('kyc_submissions').select('id, user_id, status, submission_type, full_name, proof_type, id_front_url, proof_url, submitted_at, pre_approval_amount').order('submitted_at', { ascending: false }),
         ]);
 
         if (propRes.error) throw propRes.error;
@@ -391,6 +392,7 @@ export default function AdminPage() {
                       <th className="py-3 pr-2 text-xs font-semibold uppercase tracking-wide text-[#888888]">Name</th>
                       <th className="py-3 pr-2 text-xs font-semibold uppercase tracking-wide text-[#888888]">Type</th>
                       <th className="py-3 pr-2 text-xs font-semibold uppercase tracking-wide text-[#888888]">Proof type</th>
+                      <th className="py-3 pr-2 text-xs font-semibold uppercase tracking-wide text-[#888888]">Amount</th>
                       <th className="py-3 pr-2 text-xs font-semibold uppercase tracking-wide text-[#888888]">Status</th>
                       <th className="py-3 pr-2 text-xs font-semibold uppercase tracking-wide text-[#888888]">Submitted</th>
                       <th className="py-3 pr-2 text-xs font-semibold uppercase tracking-wide text-[#888888]">Docs</th>
@@ -409,6 +411,7 @@ export default function AdminPage() {
                           </span>
                         </td>
                         <td className="py-3 pr-2 text-xs text-[#4A4A4A]">{r.proof_type ?? '\u2014'}</td>
+                        <td className="py-3 pr-2 text-xs text-[#1A1A1A]">{r.pre_approval_amount != null ? `$${Number(r.pre_approval_amount).toLocaleString()}` : '\u2014'}</td>
                         <td className="py-3 pr-2">
                           <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${r.status === 'APPROVED' ? 'bg-[#D1FAE5] text-[#065F46]' : r.status === 'REJECTED' ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#FEF3C7] text-[#92400E]'}`}>
                             {r.status}

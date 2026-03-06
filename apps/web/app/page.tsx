@@ -150,7 +150,7 @@ export default async function HomePage() {
                   </svg>
                   <input
                     type="search"
-                    name="q"
+                    name="search"
                     placeholder="Search by city, neighborhood, or ZIP"
                     className="min-w-0 flex-1 bg-transparent py-4 font-body text-base text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
                   />
@@ -350,7 +350,7 @@ export default async function HomePage() {
             List your home for a flat $500 fee. No listing agent. No 3% commission. Just a professional listing and direct offers from verified buyers.
           </p>
           <Link
-            href="/sell/list"
+            href="/sell"
             className="mt-8 inline-block rounded-full border-2 border-[var(--color-brand-primary-light)] bg-transparent px-8 py-3.5 font-body text-base font-semibold text-[var(--color-text-inverse)] hover:bg-[var(--color-brand-primary-light)] transition-colors"
           >
             List your home free →

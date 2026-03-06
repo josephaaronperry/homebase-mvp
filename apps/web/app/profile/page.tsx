@@ -60,7 +60,7 @@ export default function ProfilePage() {
           updatedAt: new Date().toISOString(),
         }, { onConflict: 'id' });
       }
-      const { data: kyc } = await supabase.from('kyc_submissions').select('status').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      const { data: kyc } = await supabase.from('kyc_submissions').select('status').eq('user_id', user.id).order('submitted_at', { ascending: false }).limit(1).maybeSingle();
       setIsVerified((kyc as { status?: string } | null)?.status === 'APPROVED');
       setLoading(false);
     };
@@ -116,71 +116,71 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-1 items-center justify-center bg-slate-950 text-slate-50">
-        <div className="h-24 w-24 animate-pulse rounded-3xl border border-slate-800 bg-slate-900/80" />
+      <div className="flex min-h-screen flex-1 items-center justify-center bg-[#FAFAF8]">
+        <div className="h-24 w-24 animate-pulse rounded-3xl border-2 border-[#E8E6E1] bg-white" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-1 flex-col bg-slate-950 text-slate-50">
+    <div className="flex min-h-screen flex-1 flex-col bg-[#FAFAF8] text-[#1A1A1A]">
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         <header className="mb-6 flex items-center justify-between">
-          <Link href="/dashboard" className="rounded-full border border-slate-800/80 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-emerald-500/60">
+          <Link href="/dashboard" className="rounded-full border border-[#E8E6E1] bg-white px-3 py-1.5 text-xs font-medium text-[#4A4A4A] hover:border-[#1B4332] hover:text-[#1B4332]">
             ← Dashboard
           </Link>
-          <h1 className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-400">Profile</h1>
+          <h1 className="font-display text-sm font-semibold uppercase tracking-[0.3em] text-[#1A1A1A]">Profile</h1>
         </header>
 
-        <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/80 p-5 shadow-2xl shadow-black/40">
+        <section className="space-y-4 rounded-2xl border border-[#E8E6E1] bg-white p-8 shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-800 text-xl text-slate-200">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F4F3F0] text-xl font-semibold text-[#1B4332]">
               {profile.full_name?.[0] ?? 'U'}
             </div>
             <div className="flex-1 text-sm">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-50">{profile.full_name || 'Your name'}</span>
+                <span className="font-semibold text-[#1A1A1A]">{profile.full_name || 'Your name'}</span>
                 {isVerified ? (
-                  <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">✓ Verified</span>
+                  <span className="rounded-full bg-[#D1FAE5] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#065F46]">✓ Verified</span>
                 ) : (
-                  <Link href="/verify" className="rounded-full border border-amber-500/50 px-2 py-0.5 text-[10px] font-semibold text-amber-300 hover:bg-amber-500/10">
+                  <Link href="/verify" className="rounded-full bg-[#FEF3C7] px-3 py-1 text-xs font-semibold text-[#92400E] hover:bg-[#FDE68A]">
                     Verify identity
                   </Link>
                 )}
               </div>
-              <div className="text-xs text-slate-400">{profile.email ?? 'No email'}</div>
+              <div className="text-xs text-[#888888]">{profile.email ?? 'No email'}</div>
             </div>
           </div>
 
-          {error && <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-xs text-rose-100">{error}</div>}
-          {success && <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-xs text-emerald-100">Profile updated successfully.</div>}
+          {error && <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800">{error}</div>}
+          {success && <div className="rounded-2xl border border-[#D1FAE5] bg-[#D1FAE5]/50 px-4 py-3 text-xs text-[#065F46]">Profile updated successfully.</div>}
 
           <form onSubmit={handleSave} className="mt-2 space-y-4 text-sm">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-200">Display name</label>
-              <input className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none focus:border-emerald-500/60" value={profile.full_name ?? ''} onChange={(e) => setProfile((p) => ({ ...p, full_name: e.target.value }))} placeholder="Your name" />
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-[#888888]">Display name</label>
+              <input className="w-full rounded-xl border border-[#E8E6E1] bg-white px-4 py-3 text-[#1A1A1A] outline-none focus:border-[#1B4332] focus:outline-none" value={profile.full_name ?? ''} onChange={(e) => setProfile((p) => ({ ...p, full_name: e.target.value }))} placeholder="Your name" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-200">Phone</label>
-              <input className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none focus:border-emerald-500/60" value={profile.phone ?? ''} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} placeholder="+1 (555) 000-0000" />
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-[#888888]">Phone</label>
+              <input className="w-full rounded-xl border border-[#E8E6E1] bg-white px-4 py-3 text-[#1A1A1A] outline-none focus:border-[#1B4332] focus:outline-none" value={profile.phone ?? ''} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} placeholder="+1 (555) 000-0000" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-200">Email</label>
-              <input className="w-full cursor-not-allowed rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-400" value={profile.email ?? ''} readOnly />
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-[#888888]">Email</label>
+              <input className="w-full cursor-not-allowed rounded-xl border border-[#E8E6E1] bg-[#F4F3F0] px-4 py-3 text-[#888888]" value={profile.email ?? ''} readOnly />
             </div>
-            <button type="submit" disabled={saving} className="mt-2 w-full rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-70">
+            <button type="submit" disabled={saving} className="mt-2 w-full rounded-xl bg-[#1B4332] py-2.5 text-sm font-semibold text-white hover:bg-[#2D6A4F] disabled:opacity-70">
               {saving ? 'Saving…' : 'Save changes'}
             </button>
           </form>
 
-          <div className="border-t border-slate-800 pt-4 mt-6">
-            <h2 className="text-sm font-semibold text-slate-200">Change password</h2>
-            {passwordError && <div className="mt-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">{passwordError}</div>}
-            {passwordSuccess && <div className="mt-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">Password updated.</div>}
+          <div className="border-t border-[#E8E6E1] pt-6 mt-6">
+            <h2 className="text-sm font-semibold text-[#1A1A1A]">Change password</h2>
+            {passwordError && <div className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">{passwordError}</div>}
+            {passwordSuccess && <div className="mt-2 rounded-xl border border-[#D1FAE5] bg-[#D1FAE5]/50 px-3 py-2 text-xs text-[#065F46]">Password updated.</div>}
             <form onSubmit={handleChangePassword} className="mt-3 space-y-3">
-              <input type="password" value={password.new} onChange={(e) => setPassword((p) => ({ ...p, new: e.target.value }))} placeholder="New password" className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500" minLength={8} />
-              <input type="password" value={password.confirm} onChange={(e) => setPassword((p) => ({ ...p, confirm: e.target.value }))} placeholder="Confirm new password" className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500" />
-              <button type="submit" disabled={passwordSaving || !password.new || !password.confirm} className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-emerald-500/60 disabled:opacity-50">
+              <input type="password" value={password.new} onChange={(e) => setPassword((p) => ({ ...p, new: e.target.value }))} placeholder="New password" className="w-full rounded-xl border border-[#E8E6E1] bg-white px-4 py-3 text-[#1A1A1A] placeholder:text-[#888888] focus:border-[#1B4332] focus:outline-none" minLength={8} />
+              <input type="password" value={password.confirm} onChange={(e) => setPassword((p) => ({ ...p, confirm: e.target.value }))} placeholder="Confirm new password" className="w-full rounded-xl border border-[#E8E6E1] bg-white px-4 py-3 text-[#1A1A1A] placeholder:text-[#888888] focus:border-[#1B4332] focus:outline-none" />
+              <button type="submit" disabled={passwordSaving || !password.new || !password.confirm} className="rounded-xl bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2D6A4F] disabled:opacity-50">
                 {passwordSaving ? 'Updating…' : 'Update password'}
               </button>
             </form>

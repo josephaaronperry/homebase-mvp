@@ -16,6 +16,7 @@ type Listing = {
   city: string | null;
   state: string | null;
   price: number | null;
+  created_at?: string | null;
 };
 
 type OfferCounts = Record<string, number>;
@@ -76,7 +77,7 @@ export default function SellDashboardPage() {
       }
       setError(null);
       const [listRes, countsRes, showingsCountsRes, dealsRes] = await Promise.all([
-        supabase.from('seller_listings').select('id, property_id, status').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabase.from('seller_listings').select('id, property_id, status, created_at').eq('user_id', user.id).order('created_at', { ascending: false }),
         fetch('/api/sell/offers/counts').then((r) => r.ok ? r.json() : { counts: {} }),
         fetch('/api/sell/showings/counts').then((r) => r.ok ? r.json() : { counts: {} }),
         supabase.from('deals').select('id, property_id, buyer_id').eq('seller_id', user.id).eq('status', 'active'),
@@ -114,9 +115,9 @@ export default function SellDashboardPage() {
         else {
           const propMap = new Map((props ?? []).map((p: { id: string; address: string | null; city: string | null; state: string | null; price: number | null }) => [p.id, p]));
           setListings(
-            (rows as { id: string; property_id: string; status: string }[]).map((r) => {
+            (rows as { id: string; property_id: string; status: string; created_at?: string | null }[]).map((r) => {
               const p = propMap.get(r.property_id) as { address: string | null; city: string | null; state: string | null; price: number | null } | undefined;
-              return { id: r.id, property_id: r.property_id, status: r.status, address: p?.address ?? null, city: p?.city ?? null, state: p?.state ?? null, price: p?.price ?? null };
+              return { id: r.id, property_id: r.property_id, status: r.status, address: p?.address ?? null, city: p?.city ?? null, state: p?.state ?? null, price: p?.price ?? null, created_at: r.created_at ?? null };
             })
           );
         }
@@ -126,18 +127,38 @@ export default function SellDashboardPage() {
     load();
   }, [router]);
 
+  const activeListingsCount = listings.filter((l) => l.status === 'active').length;
+  const totalOffersReceived = Object.values(offerCounts).reduce((a, b) => a + b, 0);
+  const pendingResponses = listings.filter((l) => (offerCounts[l.property_id] ?? 0) > 0 && !dealPropertyIds.has(l.property_id)).length;
+
   return (
     <div className="flex min-h-screen flex-col bg-[#FAFAF8] text-[#1A1A1A]">
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
-        <Link href="/sell" className="mb-6 inline-block text-xs font-medium text-[#4A4A4A] hover:text-[#52B788]">
-          ← Sell
-        </Link>
-        <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold text-[#1A1A1A]">Seller dashboard</h1>
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
+        <div className="mb-6 flex items-center justify-between">
+          <Link href="/sell" className="text-xs font-medium text-[#4A4A4A] hover:text-[#52B788]">
+            ← Sell
+          </Link>
+          <Link href="/sell" className="rounded-xl bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2D5A47]">
+            + New listing
+          </Link>
+        </div>
+        <h1 className="font-display text-2xl font-semibold text-[#1A1A1A]">Seller dashboard</h1>
         <p className="mt-1 text-sm text-[#4A4A4A]">Your listings and activity</p>
 
-        <Link href="/sell/list" className="mt-6 inline-block rounded-xl bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2D5A47]">
-          + New listing
-        </Link>
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#888888]">Active listings</p>
+            <p className="mt-1 text-2xl font-semibold text-[#1A1A1A]">{activeListingsCount}</p>
+          </div>
+          <div className="rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#888888]">Total offers received</p>
+            <p className="mt-1 text-2xl font-semibold text-[#1A1A1A]">{totalOffersReceived}</p>
+          </div>
+          <div className="rounded-2xl border border-[#E8E6E1] bg-white p-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#888888]">Pending responses</p>
+            <p className="mt-1 text-2xl font-semibold text-[#1A1A1A]">{pendingResponses}</p>
+          </div>
+        </div>
 
         {error && (
           <div className="mt-6 rounded-2xl border border-rose-400 bg-rose-50 px-4 py-3 text-sm text-rose-800">
@@ -155,7 +176,7 @@ export default function SellDashboardPage() {
           <div className="mt-8 rounded-2xl border border-[#E8E6E1] bg-white p-8 text-center shadow-sm">
             <p className="text-4xl mb-3">🏠</p>
             <p className="text-sm text-[#4A4A4A]">No listings yet. Create your first listing to get started.</p>
-            <Link href="/sell/list" className="mt-4 inline-block rounded-xl bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2D5A47]">+ New listing</Link>
+            <Link href="/sell" className="mt-4 inline-block rounded-xl bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2D5A47]">+ Create your first listing</Link>
           </div>
         ) : (
           <div className="mt-6 space-y-3">
@@ -170,8 +191,11 @@ export default function SellDashboardPage() {
                       ${l.price?.toLocaleString() ?? '—'}
                     </span>
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusClass(l.status)}`}>
-                      {statusLabel(l.status)}
+                      {l.status === 'active' ? 'ACTIVE' : l.status === 'sold' ? 'SOLD' : l.status === 'pending_review' ? 'DRAFT' : statusLabel(l.status)}
                     </span>
+                    {l.created_at && (
+                      <span className="text-[11px] text-[#888888]">Listed {new Date(l.created_at).toLocaleDateString()}</span>
+                    )}
                     {dealPropertyIds.has(l.property_id) && (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                         Under contract
@@ -204,16 +228,13 @@ export default function SellDashboardPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <Link href={`/sell/offers/${l.property_id}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[#E8E6E1] bg-white px-3 py-1.5 text-xs font-semibold text-[#1A1A1A] hover:border-[#1B4332]">
-                    {(offerCounts[l.property_id] ?? 0)} offers
+                    View offers ({(offerCounts[l.property_id] ?? 0)})
                   </Link>
-                  <Link href={`/sell/showings/${l.property_id}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[#E8E6E1] bg-white px-3 py-1.5 text-xs font-semibold text-[#1A1A1A] hover:border-[#1B4332]">
-                    {(showingCounts[l.property_id] ?? 0)} showings
+                  <Link href={`/sell/list?edit=${l.property_id}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[#E8E6E1] bg-white px-3 py-1.5 text-xs font-semibold text-[#1A1A1A] hover:border-[#1B4332]">
+                    Edit listing
                   </Link>
                   <Link href={`/properties/${l.property_id}`} className="text-xs font-semibold text-[#52B788] hover:text-[#1B4332]">
                     View listing
-                  </Link>
-                  <Link href={`/sell/list/${l.property_id}`} className="text-xs font-medium text-[#4A4A4A] hover:text-[#1A1A1A]">
-                    Edit listing
                   </Link>
                 </div>
               </div>
