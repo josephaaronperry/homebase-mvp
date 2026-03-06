@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
+import { Search, FileText, CheckCircle, Building2, BarChart3, Key, Home, DollarSign } from 'lucide-react';
 import { PropertyCard } from '@/components/PropertyCard';
 import { SavingsCalculator } from '@/components/SavingsCalculator';
 
@@ -26,12 +27,12 @@ function getDisplayImage(p: Property): string | null {
 }
 
 const HOW_IT_WORKS = [
-  { step: 1, title: 'Browse verified listings', desc: 'Search homes without being tracked by agents or bombarded with calls.', icon: '🔍' },
-  { step: 2, title: 'Submit your offer directly', desc: 'Make a binding offer straight to the seller. No middleman.', icon: '📋' },
-  { step: 3, title: 'Get verified', desc: "Complete identity verification so sellers know you're serious.", icon: '✅' },
-  { step: 4, title: 'Lenders compete for you', desc: 'Once your offer is accepted, our network of lenders submit their best rates. You compare and choose.', icon: '🏦' },
-  { step: 5, title: 'Track every step', desc: "Your 9-stage pipeline tells you exactly where you are and what's next — no more chasing your agent for updates.", icon: '📊' },
-  { step: 6, title: 'Close with confidence', desc: "We guide you through inspection, appraisal, and closing. You're never alone.", icon: '🔑' },
+  { step: 1, title: 'Browse verified listings', desc: 'Search homes without being tracked by agents or bombarded with calls.', Icon: Search },
+  { step: 2, title: 'Submit your offer directly', desc: 'Make a binding offer straight to the seller. No middleman.', Icon: FileText },
+  { step: 3, title: 'Get verified', desc: "Complete identity verification so sellers know you're serious.", Icon: CheckCircle },
+  { step: 4, title: 'Lenders compete for you', desc: 'Once your offer is accepted, our network of lenders submit their best rates. You compare and choose.', Icon: Building2 },
+  { step: 5, title: 'Track every step', desc: "Your 9-stage pipeline tells you exactly where you are and what's next — no more chasing your agent for updates.", Icon: BarChart3 },
+  { step: 6, title: 'Close with confidence', desc: "We guide you through inspection, appraisal, and closing. You're never alone.", Icon: Key },
 ];
 
 const TESTIMONIALS = [
@@ -127,11 +128,11 @@ export function HomePageContent({
               </div>
             </motion.form>
             <motion.div className="mt-4 flex flex-wrap gap-3" variants={item} transition={{ duration: 0.3 }}>
-              <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2 font-body text-sm text-[var(--color-text-secondary)]">
-                🏡 {listingCount} homes listed
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2 font-body text-sm text-[var(--color-text-secondary)]">
+                <Home className="h-4 w-4 shrink-0" /> {listingCount} homes listed
               </span>
-              <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2 font-body text-sm text-[var(--color-text-secondary)]">
-                💰 $23,000 avg. buyer savings
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-card)] px-4 py-2 font-body text-sm text-[var(--color-text-secondary)]">
+                <DollarSign className="h-4 w-4 shrink-0" /> $23,000 avg. buyer savings
               </span>
             </motion.div>
           </div>
@@ -150,7 +151,7 @@ export function HomePageContent({
                         <img src={getDisplayImage(p)!} alt={p.address ?? ''} className="h-full w-full object-cover" />
                       </div>
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-[#c8e6c9] text-4xl" style={{ aspectRatio: '4/3' }}>🏡</div>
+                      <div className="flex h-full w-full items-center justify-center bg-[#c8e6c9] text-[#1B4332]" style={{ aspectRatio: '4/3' }}><Home className="h-12 w-12" /></div>
                     )}
                     <div className="p-3 font-body text-sm font-medium text-[var(--color-text-primary)]">
                       {p.price != null ? `$${Number(p.price).toLocaleString()}` : '—'} · {p.city ?? ''}{p.city && p.state ? ', ' : ''}{p.state ?? ''}
@@ -189,22 +190,21 @@ export function HomePageContent({
           <h2 className="font-display text-3xl font-semibold text-[var(--color-text-primary)] sm:text-4xl">How HomeBase works</h2>
           <p className="mt-2 font-body text-lg text-[var(--color-text-secondary)]">We do everything a buyer&apos;s agent would do — minus the 3% fee.</p>
           <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-2">
-            {HOW_IT_WORKS.map((item, i) => (
-              <motion.div
-                key={item.step}
-                className="flex gap-4"
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.35, delay: i * 0.08 }}
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] font-mono text-sm font-semibold text-[var(--color-text-inverse)]">{item.step}</span>
-                <div>
-                  <h3 className="font-body text-lg font-semibold text-[var(--color-text-primary)]">{item.icon} {item.title}</h3>
-                  <p className="mt-1 font-body text-sm text-[var(--color-text-muted)]">{item.desc}</p>
+            {HOW_IT_WORKS.map((item) => {
+              const Icon = item.Icon;
+              return (
+                <div
+                  key={item.step}
+                  className="flex gap-4"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] font-mono text-sm font-semibold text-[var(--color-text-inverse)]">{item.step}</span>
+                  <div>
+                    <h3 className="font-body text-lg font-semibold text-[var(--color-text-primary)] flex items-center gap-2"><Icon className="h-5 w-5 shrink-0 text-[var(--color-brand-primary)]" /> {item.title}</h3>
+                    <p className="mt-1 font-body text-sm text-[var(--color-text-muted)]">{item.desc}</p>
+                  </div>
                 </div>
-              </motion.div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -270,18 +270,14 @@ export function HomePageContent({
           <h2 className="font-display text-3xl font-semibold text-[var(--color-text-primary)] sm:text-4xl">Built for buyers who do their homework</h2>
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {TESTIMONIALS.map((t, i) => (
-              <motion.blockquote
+              <blockquote
                 key={i}
                 className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6 shadow-[var(--shadow-card)]"
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.06 }}
               >
                 <span className="font-display text-4xl italic text-[var(--color-brand-primary)]">&ldquo;</span>
                 <p className="mt-2 font-display text-lg italic text-[var(--color-text-primary)]">{t.quote}</p>
                 <footer className="mt-4 font-body text-sm text-[var(--color-text-muted)]">— {t.name}, {t.location}</footer>
-              </motion.blockquote>
+              </blockquote>
             ))}
           </div>
         </div>
