@@ -77,7 +77,7 @@ export default function NewOfferPage() {
         supabase.from('users').select('kycStatus, preApprovalStatus').eq('id', user.id).maybeSingle(),
       ]);
       const profile = userProfileRes.data as { kycStatus?: string; preApprovalStatus?: string } | null;
-      const kycApproved = profile?.kycStatus === 'APPROVED';
+      const kycApproved = profile?.kycStatus === 'VERIFIED';
       const preApprovalApproved = profile?.preApprovalStatus === 'APPROVED';
       setGate({ kycApproved, preApprovalApproved });
 

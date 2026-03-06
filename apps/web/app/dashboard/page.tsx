@@ -273,11 +273,11 @@ export default function DashboardPage() {
       setPreApprovalStatus(profile?.preApprovalStatus ?? 'NONE');
       if (profile?.kycStatus != null) {
         setKycStatus(profile.kycStatus);
-        setIsVerified(profile.kycStatus === 'APPROVED');
+        setIsVerified(profile.kycStatus === 'VERIFIED');
       } else {
         const kyc = (kycRes.data as { status?: string } | null)?.status ?? null;
         setKycStatus(kyc);
-        setIsVerified(kyc === 'APPROVED');
+        setIsVerified(kyc === 'VERIFIED');
       }
 
       const viewedIds = (viewedRes.data ?? [])

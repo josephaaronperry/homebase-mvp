@@ -52,7 +52,7 @@ export default function SellListPage() {
       const expectedType = listType === 'agent' ? 'seller_agent' : 'seller_fsbo';
       const sellerApproved = submissions?.some((s) => {
         const st = (s as { submission_type?: string }).submission_type;
-        return (st === expectedType || st === 'seller') && s.status === 'APPROVED';
+        return (st === expectedType || st === 'seller') && s.status === 'VERIFIED';
       });
       setSellerVerification(sellerApproved ? 'approved' : 'unverified');
     };

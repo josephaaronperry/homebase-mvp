@@ -59,7 +59,7 @@ export function PropertySidebar({
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      setIsVerified((data as { status?: string } | null)?.status === 'APPROVED');
+      setIsVerified((data as { status?: string } | null)?.status === 'VERIFIED');
     };
     check();
   }, []);

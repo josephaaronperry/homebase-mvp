@@ -80,7 +80,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [offers, setOffers] = useState<OfferRow[]>([]);
   const [kyc, setKyc] = useState<KycRow[]>([]);
-  const [kycStatusFilter, setKycStatusFilter] = useState<'all' | 'PENDING' | 'APPROVED' | 'REJECTED'>('all');
+  const [kycStatusFilter, setKycStatusFilter] = useState<'all' | 'PENDING' | 'VERIFIED' | 'FAILED'>('all');
   const [rejectModal, setRejectModal] = useState<{ id: string; user_id: string } | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [deals, setDeals] = useState<DealRow[]>([]);
@@ -232,7 +232,7 @@ export default function AdminPage() {
       setError(result.error ?? 'KYC action failed');
       return;
     }
-    setKyc((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    setKyc((prev) => prev.map((r) => (r.id === id ? { ...r, status: status === 'APPROVED' ? 'VERIFIED' : status === 'REJECTED' ? 'FAILED' : status } : r)));
     setRejectModal(null);
     setRejectReason('');
     if (status === 'APPROVED' && userId) {
@@ -380,14 +380,14 @@ export default function AdminPage() {
         {activeTab === 'kyc' && (
           <div className="mt-6 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
-              {(['all', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((f) => (
+              {(['all', 'PENDING', 'VERIFIED', 'FAILED'] as const).map((f) => (
                 <button
                   key={f}
                   type="button"
                   onClick={() => setKycStatusFilter(f)}
                   className={`rounded-full px-3 py-1.5 text-xs font-semibold ${kycStatusFilter === f ? 'bg-[#1B4332] text-white' : 'bg-white border border-[#E8E6E1] text-[#4A4A4A] hover:text-[#1B4332]'}`}
                 >
-                  {f === 'all' ? 'All' : f.charAt(0) + f.slice(1).toLowerCase()}
+                  {f === 'all' ? 'All' : f === 'VERIFIED' ? 'Approved' : f === 'FAILED' ? 'Rejected' : f.charAt(0) + f.slice(1).toLowerCase()}
                 </button>
               ))}
             </div>
@@ -424,8 +424,8 @@ export default function AdminPage() {
                         <td className="py-3 pr-2 text-xs text-[#4A4A4A]">{r.proof_type ?? '\u2014'}</td>
                         <td className="py-3 pr-2 text-xs text-[#1A1A1A]">{r.pre_approval_amount != null ? `$${Number(r.pre_approval_amount).toLocaleString()}` : '\u2014'}</td>
                         <td className="py-3 pr-2">
-                          <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${r.status === 'APPROVED' ? 'bg-[#D1FAE5] text-[#065F46]' : r.status === 'REJECTED' ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#FEF3C7] text-[#92400E]'}`}>
-                            {r.status}
+                          <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${r.status === 'VERIFIED' ? 'bg-[#D1FAE5] text-[#065F46]' : r.status === 'FAILED' ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#FEF3C7] text-[#92400E]'}`}>
+                            {r.status === 'VERIFIED' ? 'Approved' : r.status === 'FAILED' ? 'Rejected' : r.status}
                           </span>
                         </td>
                         <td className="py-3 pr-2 text-xs text-[#888888]">{r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : '\u2014'}</td>

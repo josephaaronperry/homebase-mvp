@@ -61,7 +61,7 @@ export default function ProfilePage() {
         }, { onConflict: 'id' });
       }
       const { data: kyc } = await supabase.from('kyc_submissions').select('status').eq('user_id', user.id).order('submitted_at', { ascending: false }).limit(1).maybeSingle();
-      setIsVerified((kyc as { status?: string } | null)?.status === 'APPROVED');
+      setIsVerified((kyc as { status?: string } | null)?.status === 'VERIFIED');
       setLoading(false);
     };
     load();

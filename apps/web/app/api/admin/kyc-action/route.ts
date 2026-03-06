@@ -15,8 +15,11 @@ export async function POST(req: NextRequest) {
     }
     const supabaseAdmin = getServiceRoleClient();
 
+    // Map admin action to DB enum value (KycStatus: PENDING, SUBMITTED, VERIFIED, FAILED)
+    const dbStatus = status === 'APPROVED' ? 'VERIFIED' : status === 'REJECTED' ? 'FAILED' : status;
+
     const payload: { status: string; reviewed_at: string; reviewer_notes?: string } = {
-      status,
+      status: dbStatus,
       reviewed_at: new Date().toISOString(),
     };
     if (reviewerNotes != null) payload.reviewer_notes = reviewerNotes;
@@ -30,7 +33,7 @@ export async function POST(req: NextRequest) {
     if (userEmail) {
       const { data: updateData, error: userError } = await supabaseAdmin
         .from('users')
-        .update({ kycStatus: status })
+        .update({ kycStatus: dbStatus })
         .eq('email', userEmail)
         .select();
       const count = updateData?.length ?? 0;
