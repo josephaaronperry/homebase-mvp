@@ -48,6 +48,11 @@
   --shadow-modal: 0 20px 60px rgba(0,0,0,0.2);
 }
 
+html,
+body {
+  background-color: #FAFAF8;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -71,8 +76,23 @@ h1, h2, h3 {
   }
 }
 
+/* Prevent browser extension / debug outline from showing as pink/red border */
+html,
+body,
+#__next {
+  outline: none !important;
+  border: none !important;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .btn-primary {
+    @apply bg-[#1B4332] hover:bg-[#143728] text-white transition-all duration-200 ease-in-out;
+  }
+  .btn-secondary {
+    @apply border border-[#1B4332] text-[#1B4332] hover:bg-[#1B4332] hover:text-white transition-all duration-200 ease-in-out;
   }
 }
