@@ -50,7 +50,6 @@ type KycRow = {
   id_front_url: string | null;
   proof_url: string | null;
   submitted_at: string | null;
-  created_at: string | null;
   user_email: string | null;
 };
 
@@ -108,7 +107,7 @@ export default function AdminPage() {
           supabase.from('properties').select('id, address, city, state, price, status').order('createdAt', { ascending: false }),
           supabase.from('users').select('id, fullName, email, phone, createdAt').order('createdAt', { ascending: false }),
           supabase.from('offers').select('id, userId, property_id, offerPrice, status').order('createdAt', { ascending: false }),
-          supabase.from('kyc_submissions').select('id, user_id, status, submission_type, full_name, proof_type, id_front_url, proof_url, submitted_at, created_at').order('created_at', { ascending: false }),
+          supabase.from('kyc_submissions').select('id, user_id, status, submission_type, full_name, proof_type, id_front_url, proof_url, submitted_at').order('submitted_at', { ascending: false }),
         ]);
 
         if (propRes.error) throw propRes.error;
@@ -412,7 +411,7 @@ export default function AdminPage() {
                             {r.status}
                           </span>
                         </td>
-                        <td className="py-3 pr-2 text-xs text-[#888888]">{r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : r.created_at ? new Date(r.created_at).toLocaleDateString() : '\u2014'}</td>
+                        <td className="py-3 pr-2 text-xs text-[#888888]">{r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : '\u2014'}</td>
                         <td className="py-3 pr-2">
                           {(r.id_front_url || r.proof_url) && (
                             <details className="text-xs">
