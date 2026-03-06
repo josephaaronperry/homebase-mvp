@@ -28,10 +28,13 @@ export async function POST(req: NextRequest) {
     if (subError) throw subError;
 
     if (userEmail) {
-      const { error: userError } = await supabaseAdmin
+      const { data: updateData, error: userError } = await supabaseAdmin
         .from('users')
         .update({ kycStatus: status })
-        .eq('email', userEmail);
+        .eq('email', userEmail)
+        .select();
+      const count = updateData?.length ?? 0;
+      console.log('[KYC Route] users update - data:', updateData, 'error:', userError, 'count:', count);
       if (userError) throw userError;
     }
 
